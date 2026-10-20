@@ -1,0 +1,42 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Log in{% endblock %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'css/accounts.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="auth-page">
+  <div class="auth-card">
+    <span class="auth-icon"><i class="fa-solid fa-right-to-bracket" aria-hidden="true"></i></span>
+    <h1>Welcome back</h1>
+    <p class="auth-sub">Log in to book and manage campus resources.</p>
+
+    <form method="post" class="auth-form" novalidate>
+      {% csrf_token %}
+      {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
+
+      {% for field in form %}
+      <div class="field{% if field.errors %} has-error{% endif %}">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% if field.help_text %}<div class="field-help">{{ field.help_text|safe }}</div>{% endif %}
+        {% for error in field.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+      </div>
+      {% endfor %}
+
+      {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+
+      <div class="auth-row">
+        <span></span>
+        <a class="auth-link" href="{% url 'accounts:password_reset' %}">Forgot password?</a>
+      </div>
+      <button type="submit" class="btn btn-primary btn-lg btn-block">Log in</button>
+    </form>
+
+    <p class="auth-foot">New to ResourceHub? <a class="auth-link" href="{% url 'accounts:register' %}">Create an account</a></p>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,43 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Edit profile{% endblock %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'css/accounts.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="auth-page">
+  <div class="auth-card wide">
+    <div class="avatar">
+      {% if profile.profile_picture %}
+        <img src="{{ profile.profile_picture.url }}" alt="Current profile picture">
+      {% else %}
+        {{ profile.first_name|default:user.username|slice:":1" }}
+      {% endif %}
+    </div>
+    <h1>Edit profile</h1>
+    <p class="auth-sub">Update your details and profile picture.</p>
+
+    <form method="post" enctype="multipart/form-data" class="auth-form" novalidate>
+      {% csrf_token %}
+      {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
+
+      {% for field in form %}
+      <div class="field{% if field.errors %} has-error{% endif %}">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% if field.help_text %}<div class="field-help">{{ field.help_text|safe }}</div>{% endif %}
+        {% for error in field.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+      </div>
+      {% endfor %}
+
+      <div class="auth-actions" style="margin-top:8px">
+        <a class="btn btn-outline" href="{% url 'accounts:profile' %}">Cancel</a>
+        <button type="submit" class="btn btn-primary">Save changes</button>
+      </div>
+    </form>
+  </div>
+</section>
+{% endblock %}

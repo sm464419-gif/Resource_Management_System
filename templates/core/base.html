@@ -1,0 +1,160 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#7B2CBF">
+  <title>{% block title %}Book campus resources{% endblock %} | ResourceHub</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+  <link rel="stylesheet" href="{% static 'css/master.css' %}">
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  {% with app=request.resolver_match.app_name page=request.resolver_match.url_name %}
+  <header class="site-header" id="siteHeader">
+
+    <!-- CSS-only toggles: must stay before .header-inner and .search-bar -->
+    <input type="checkbox" id="navToggle" class="nav-check" aria-label="Toggle menu">
+    <input type="checkbox" id="searchToggle" class="search-check" aria-label="Toggle search">
+
+    <div class="container header-inner">
+
+      <a href="/" class="brand" aria-label="ResourceHub home">
+        <svg class="brand-mark" viewBox="0 0 40 40" width="40" height="40" aria-hidden="true">
+          <path d="M20 3 34 11v18L20 37 6 29V11z" fill="#7B2CBF"/>
+          <path d="M20 3 34 11 20 19 6 11z" fill="#9D4EDD"/>
+          <path d="M20 19v18L6 29V11z" fill="#5A189A"/>
+          <path d="M14 15.5h12v9H14z" fill="#fff" opacity=".92"/>
+        </svg>
+        <span class="brand-name">ResourceHub</span>
+      </a>
+
+      <div class="nav-panel">
+        <nav aria-label="Main navigation">
+          <ul class="nav-list">
+            <li><a class="nav-link{% if page == 'home' %} active{% endif %}" href="/">Home</a></li>
+
+            <li>
+              <details class="has-dropdown">
+                <summary class="nav-link{% if app == 'resources' %} active{% endif %}">
+                  Resources <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+                </summary>
+                <ul class="dropdown">
+                  <li><a href="#">All resources</a></li>
+                  {% for cat in nav_categories %}
+                  <li><a href="#">{{ cat.name }}</a></li>
+                  {% endfor %}
+                </ul>
+              </details>
+            </li>
+
+            <li><a class="nav-link{% if app == 'bookings' %} active{% endif %}" href="#">Bookings</a></li>
+            {# Wrap Analytics in {% if user.is_staff %} once role-based access is in place #}
+            <li><a class="nav-link{% if app == 'analytics' %} active{% endif %}" href="#">Analytics</a></li>
+            <li><a class="nav-link{% if page == 'about' %} active{% endif %}" href="#">About</a></li>
+          </ul>
+        </nav>
+
+        <div class="nav-tools">
+          <label for="searchToggle" class="icon-btn" title="Search resources">
+            <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+          </label>
+
+          {% if user.is_authenticated %}
+            <a class="btn btn-outline" href="{% url 'accounts:profile' %}">Dashboard</a>
+            <a class="btn btn-primary" href="{% url 'accounts:profile' %}">
+              <i class="fa-regular fa-user" aria-hidden="true"></i> {{ user.profile.first_name|default:user.username }}
+            </a>
+            <form method="post" action="{% url 'accounts:logout' %}" class="logout-form">
+              {% csrf_token %}
+              <button type="submit" class="icon-btn" aria-label="Log out" title="Log out">
+                <i class="fa-solid fa-arrow-right-from-bracket" aria-hidden="true"></i>
+              </button>
+            </form>
+          {% else %}
+            <a class="btn btn-outline" href="{% url 'accounts:login' %}">Login</a>
+            <a class="btn btn-primary" href="{% url 'accounts:register' %}">Register</a>
+          {% endif %}
+        </div>
+      </div>
+
+      <label for="navToggle" class="hamburger" title="Menu">
+        <span></span><span></span><span></span>
+      </label>
+    </div>
+
+    <div class="search-bar">
+      <form class="container search-form" method="get" action="#" role="search">
+        <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+        <input type="search" name="q" placeholder="Search rooms, labs, equipment…" aria-label="Search resources">
+        <button type="submit" class="btn btn-primary">Search</button>
+      </form>
+    </div>
+  </header>
+  {% endwith %}
+
+  {% if messages %}
+  <div class="container messages" role="status">
+    {% for message in messages %}
+      <div class="message message-{{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <main id="main">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div class="footer-brand">
+        <a href="/" class="brand brand-light">
+          <svg class="brand-mark" viewBox="0 0 40 40" width="40" height="40" aria-hidden="true">
+            <path d="M20 3 34 11v18L20 37 6 29V11z" fill="#9D4EDD"/>
+            <path d="M20 3 34 11 20 19 6 11z" fill="#C77DFF"/>
+            <path d="M20 19v18L6 29V11z" fill="#7B2CBF"/>
+            <path d="M14 15.5h12v9H14z" fill="#fff" opacity=".92"/>
+          </svg>
+          <span class="brand-name">ResourceHub</span>
+        </a>
+        <p class="footer-tagline">Book &bull; Manage &bull; Share &bull; Grow</p>
+      </div>
+
+      <nav class="footer-nav" aria-label="Footer navigation">
+        <a href="/">Home</a>
+        <a href="#">Resources</a>
+        <a href="#">Bookings</a>
+        <a href="#">Analytics</a>
+        <a href="#">About</a>
+      </nav>
+
+      <ul class="social">
+        <li><a href="#" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a></li>
+        <li><a href="#" aria-label="LinkedIn"><i class="fa-brands fa-linkedin-in"></i></a></li>
+        <li><a href="#" aria-label="GitHub"><i class="fa-brands fa-github"></i></a></li>
+        <li><a href="#" aria-label="YouTube"><i class="fa-brands fa-youtube"></i></a></li>
+      </ul>
+    </div>
+
+    <div class="container footer-bottom">
+      <p>&copy; {% now "Y" %} ResourceHub. All rights reserved.</p>
+      <p>Powered by <strong>django</strong></p>
+    </div>
+  </footer>
+
+  <script>
+    const h = document.getElementById('siteHeader'), close = () => { h.querySelectorAll('input').forEach(c => c.checked = false); h.querySelector('details').open = false; };
+    document.addEventListener('click', e => { if (!h.contains(e.target)) close(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
+  </script>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

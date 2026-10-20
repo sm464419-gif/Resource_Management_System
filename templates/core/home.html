@@ -1,0 +1,250 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Book campus rooms, labs and equipment{% endblock %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'css/home.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<!-- Shared blob shape used by the hero image and the purple accent behind it -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <clipPath id="heroBlob" clipPathUnits="objectBoundingBox">
+    <path d="M0.17,0 L1,0 L1,1 L0.05,1
+             C0.02,0.86 0.10,0.78 0.06,0.64
+             C0.02,0.50 0.12,0.40 0.08,0.26
+             C0.05,0.14 0.12,0.06 0.17,0 Z"/>
+  </clipPath>
+</svg>
+
+<!-- ============ HERO ============ -->
+<section class="hero" aria-labelledby="heroTitle">
+  <div class="hero-copy">
+    <p class="eyebrow">Book &bull; Manage &bull; Share &bull; Grow</p>
+    <h1 id="heroTitle">
+      <span class="hero-line">Welcome to</span>
+      <span class="hero-line">Resource<span class="hub">Hub</span></span>
+    </h1>
+    <p class="hero-text">
+      Your all-in-one platform to discover, book and manage campus resources
+      &mdash; rooms, labs, equipment and more. Make the most of your campus, together.
+    </p>
+    <div class="hero-actions">
+      <a class="btn btn-primary btn-lg" href="#">
+        <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i> Browse Resources
+        <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+      </a>
+      <a class="btn btn-ghost btn-lg" href="#why-us">
+        <i class="fa-regular fa-circle-play" aria-hidden="true"></i> How It Works
+      </a>
+    </div>
+  </div>
+
+  <div class="hero-media">
+    <span class="hero-wave" aria-hidden="true"></span>
+    <span class="hero-ribbon" aria-hidden="true"></span>
+    <span class="hero-blob" aria-hidden="true"></span>
+    <img src="{% static 'image/Rms.jpg' %}" width="900" height="640"
+         alt="University campus building surrounded by trees" fetchpriority="high">
+    <div class="float-card">
+      <span class="float-icon"><i class="fa-regular fa-calendar-check" aria-hidden="true"></i></span>
+      <span><strong>Easy Booking</strong><small>Fast &amp; Simple</small></span>
+    </div>
+    <p class="hero-tagline" aria-hidden="true">Better<br>Resources<br>Brighter<br><span>Campus</span></p>
+  </div>
+</section>
+
+<!-- ============ BROWSE BY CATEGORY (from ResourceCategory) ============ -->
+<section class="section" aria-labelledby="catTitle">
+  <div class="container">
+    <div class="section-head">
+      <div>
+        <p class="eyebrow">Browse by category</p>
+        <h2 id="catTitle">Find <span class="accent">What You Need</span></h2>
+        <p class="section-sub">
+          Explore our wide range of resources, neatly organized by category.
+          Find exactly what you need, when you need it.
+        </p>
+      </div>
+      <a class="link-more" href="#">
+        View All Categories <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+      </a>
+    </div>
+
+    {% if categories %}
+    <ul class="cat-grid">
+      {% for category in categories %}
+      <li>
+        <a class="cat-card tone-{% cycle 'violet' 'blue' 'green' 'orange' 'pink' 'teal' %}"
+           href="#">
+          <span class="cat-icon">
+            <i class="{{ category.icon|default:'fa-solid fa-layer-group' }}" aria-hidden="true"></i>
+          </span>
+          <h3>{{ category.name }}</h3>
+          <p>{{ category.resource_count }} Resource{{ category.resource_count|pluralize }}</p>
+          <span class="cat-go" aria-hidden="true"><i class="fa-solid fa-arrow-right"></i></span>
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <div class="empty">
+      <i class="fa-regular fa-folder-open" aria-hidden="true"></i>
+      <p>No categories yet.</p>
+      {% if user.is_staff %}
+        <a class="btn btn-primary" href="#">Add a category</a>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+</section>
+
+<!-- ============ WHY CHOOSE US (static content) ============ -->
+<section class="container why-wrap" id="why-us" aria-labelledby="whyTitle">
+  <div class="why">
+    <div class="why-art" aria-hidden="true">
+      <span class="why-circle"><i class="fa-solid fa-laptop"></i></span>
+      <span class="why-badge"><i class="fa-regular fa-calendar-days"></i></span>
+    </div>
+
+    <div class="why-copy">
+      <p class="eyebrow">Why choose us</p>
+      <h2 id="whyTitle">Everything You Need <span class="accent">in One Platform</span></h2>
+      <p class="section-sub">
+        Our system is designed to make resource management simple, secure and efficient
+        for everyone on campus.
+      </p>
+      {% if user.is_authenticated %}
+        <a class="btn btn-primary" href="#">
+          Get Started <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+        </a>
+      {% else %}
+        <a class="btn btn-primary" href="#">
+          Get Started <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+        </a>
+      {% endif %}
+    </div>
+
+    <ul class="why-features">
+      <li>
+        <span class="feat-icon"><i class="fa-solid fa-bolt" aria-hidden="true"></i></span>
+        <div><h3>Easy Booking</h3><p>Book resources in just a few clicks.</p></div>
+      </li>
+      <li>
+        <span class="feat-icon"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i></span>
+        <div><h3>Secure Access</h3><p>Verified users and safe management.</p></div>
+      </li>
+      <li>
+        <span class="feat-icon"><i class="fa-solid fa-chart-column" aria-hidden="true"></i></span>
+        <div><h3>Track Usage</h3><p>Get insights with real-time analytics.</p></div>
+      </li>
+      <li>
+        <span class="feat-icon"><i class="fa-regular fa-bell" aria-hidden="true"></i></span>
+        <div><h3>Stay Notified</h3><p>Receive updates and reminders.</p></div>
+      </li>
+      <li>
+        <span class="feat-icon"><i class="fa-solid fa-share-nodes" aria-hidden="true"></i></span>
+        <div><h3>Share Resources</h3><p>Share rooms, labs and equipment with others.</p></div>
+      </li>
+      <li>
+        <span class="feat-icon"><i class="fa-solid fa-qrcode" aria-hidden="true"></i></span>
+        <div><h3>QR Check-in</h3><p>Quick and easy access with QR codes.</p></div>
+      </li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ MOST BOOKED RESOURCES (from Resource + Booking) ============ -->
+<section class="section" aria-labelledby="popTitle">
+  <div class="container">
+    <div class="section-head">
+      <div>
+        <p class="eyebrow"><i class="fa-solid fa-star" aria-hidden="true"></i> Popular resources</p>
+        <h2 id="popTitle">Most Booked <span class="accent">Resources</span></h2>
+        <p class="section-sub">These resources are highly rated and frequently booked by our users.</p>
+      </div>
+      <a class="link-more" href="#">
+        View All Resources <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+      </a>
+    </div>
+
+    {% if popular_resources %}
+    <div class="res-grid">
+      {% for resource in popular_resources %}
+      <article class="res-card">
+        <div class="res-media">
+          {% if resource.image %}
+            <img src="{{ resource.image.url }}" alt="{{ resource.name }}" loading="lazy" width="400" height="200">
+          {% else %}
+            <div class="res-placeholder" aria-hidden="true"><i class="fa-regular fa-image"></i></div>
+          {% endif %}
+          <span class="res-tag">{{ resource.category.name }}</span>
+          <button type="button" class="fav" aria-label="Save {{ resource.name }}" data-resource-id="{{ resource.pk }}">
+            <i class="fa-regular fa-heart" aria-hidden="true"></i>
+          </button>
+        </div>
+
+        <div class="res-body">
+          <h3><a href="#">{{ resource.name }}</a></h3>
+          <p class="res-meta">
+            <i class="fa-solid fa-location-dot" aria-hidden="true"></i>
+            {{ resource.department|default:resource.location }}
+          </p>
+          <p class="res-meta">
+            <i class="fa-solid fa-users" aria-hidden="true"></i>
+            {{ resource.capacity }} Capacity
+            <span class="status status-{{ resource.status }}">{{ resource.get_status_display }}</span>
+          </p>
+          <a class="btn btn-primary btn-block" href="#">
+            <i class="fa-regular fa-calendar-check" aria-hidden="true"></i> Book Now
+            <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+          </a>
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty">
+      <i class="fa-regular fa-calendar-xmark" aria-hidden="true"></i>
+      <p>No bookings yet, so there are no popular resources to show.</p>
+      <a class="btn btn-primary" href="#">Browse resources</a>
+    </div>
+    {% endif %}
+  </div>
+</section>
+
+<!-- ============ STATS STRIP (live counts) ============ -->
+<section class="stats" aria-label="ResourceHub statistics">
+  <div class="container stats-inner">
+    <p class="stats-title" aria-hidden="true">Trusted by<br>Our Campus</p>
+
+    <ul class="stats-grid">
+      <li class="stat">
+        <i class="fa-solid fa-layer-group" aria-hidden="true"></i>
+        <strong>{{ stats.categories }}</strong>
+        <span>Resource Categories</span>
+      </li>
+      <li class="stat">
+        <i class="fa-regular fa-user" aria-hidden="true"></i>
+        <strong>{{ stats.users }}</strong>
+        <span>Registered Users</span>
+      </li>
+      <li class="stat">
+        <i class="fa-regular fa-calendar-check" aria-hidden="true"></i>
+        <strong>{{ stats.bookings }}</strong>
+        <span>Total Bookings</span>
+      </li>
+      <li class="stat">
+        <i class="fa-solid fa-chart-pie" aria-hidden="true"></i>
+        <strong>{{ stats.utilization }}%</strong>
+        <span>Resource Utilization</span>
+      </li>
+    </ul>
+
+    <i class="fa-solid fa-graduation-cap stats-art" aria-hidden="true"></i>
+  </div>
+</section>
+
+{% endblock %}

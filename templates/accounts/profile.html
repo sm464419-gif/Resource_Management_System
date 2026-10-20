@@ -1,0 +1,57 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}My profile{% endblock %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'css/accounts.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="profile-page">
+  <div class="container profile-grid">
+
+    <aside class="profile-card">
+      <div class="avatar">
+        {% if profile.profile_picture %}
+          <img src="{{ profile.profile_picture.url }}" alt="{{ display_name }}">
+        {% else %}
+          {{ display_name|slice:":1" }}
+        {% endif %}
+      </div>
+      <h1>{{ display_name }}</h1>
+      {% if profile.designation %}<p class="profile-email">{{ profile.designation }}</p>{% endif %}
+      <p class="profile-email">{{ user.email }}</p>
+      <span class="badge">{{ user.role|default:"Member" }}</span>
+
+      <div class="profile-actions">
+        <a class="btn btn-primary btn-block" href="{% url 'accounts:profile_edit' %}"><i class="fa-regular fa-pen-to-square" aria-hidden="true"></i> Edit profile</a>
+        <a class="btn btn-outline btn-block" href="{% url 'accounts:change_password' %}"><i class="fa-solid fa-key" aria-hidden="true"></i> Change password</a>
+        <a class="btn btn-outline btn-block" href="{% url 'accounts:change_email' %}"><i class="fa-regular fa-envelope" aria-hidden="true"></i> Change email</a>
+      </div>
+    </aside>
+
+    <div class="panel">
+      <h2>Profile details</h2>
+      <dl class="details">
+        <div><dt>Full name</dt><dd>{{ display_name }}</dd></div>
+        <div><dt>Username</dt><dd>{{ user.username }}</dd></div>
+        <div>
+          <dt>Email</dt>
+          <dd>
+            {{ user.email }}
+            {% if user.email_verified %}<span class="verified">&middot; Verified</span>
+            {% else %}<span class="unverified">&middot; Not verified</span>{% endif %}
+          </dd>
+        </div>
+        <div><dt>Phone</dt><dd>{{ profile.phone|default:"Not set" }}</dd></div>
+        <div><dt>Designation</dt><dd>{{ profile.designation|default:"Not set" }}</dd></div>
+        <div><dt>Role</dt><dd>{{ user.role|default:"Not set" }}</dd></div>
+        <div><dt>Department</dt><dd>{{ user.department|default:"Not set" }}</dd></div>
+        <div><dt>Member since</dt><dd>{{ user.date_joined|date:"j F Y" }}</dd></div>
+      </dl>
+    </div>
+
+  </div>
+</section>
+{% endblock %}
