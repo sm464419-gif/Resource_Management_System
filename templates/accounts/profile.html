@@ -25,7 +25,7 @@
       <span class="badge">{{ user.role|default:"Member" }}</span>
 
       <div class="profile-actions">
-        <a class="btn btn-primary btn-block" href="{% url 'accounts:profile_edit' %}"><i class="fa-regular fa-pen-to-square" aria-hidden="true"></i> Edit profile</a>
+        <a class="btn btn-primary btn-block" href="{% url 'accounts:update_profile' %}"><i class="fa-regular fa-pen-to-square" aria-hidden="true"></i> Edit profile</a>
         <a class="btn btn-outline btn-block" href="{% url 'accounts:change_password' %}"><i class="fa-solid fa-key" aria-hidden="true"></i> Change password</a>
         <a class="btn btn-outline btn-block" href="{% url 'accounts:change_email' %}"><i class="fa-regular fa-envelope" aria-hidden="true"></i> Change email</a>
       </div>
