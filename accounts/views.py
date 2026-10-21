@@ -1,4 +1,6 @@
+import secrets
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import (
     get_user_model,
@@ -12,13 +14,12 @@ from django.contrib.auth.forms import (
     PasswordChangeForm,
 )
 from django.core.mail import send_mail
+from django.db import transaction
 from django.shortcuts import (
     get_object_or_404,
     redirect,
     render,
 )
-from django.urls import reverse
-from django.conf import settings
 from django.views.decorators.http import require_POST
 
 from .forms import RegisterForm, ProfileForm, ChangeEmailForm
@@ -42,10 +43,8 @@ def register_view(request):
         if form.is_valid():
             user = form.save(commit=False)
 
-            # Email verification is not required.
-            # Set this to True if the field still exists in your model.
+            # Email verification is not required for registration.
             user.email_verified = True
-
             user.save()
 
             # Create the user's profile.
@@ -85,8 +84,6 @@ def login_view(request):
 
         if form.is_valid():
             user = form.get_user()
-
-            # No email verification check is needed.
             login(request, user)
 
             messages.success(
@@ -233,43 +230,65 @@ def change_email(request):
         if form.is_valid():
             new_email = form.cleaned_data["new_email"]
 
-            # Invalidate older pending email-change requests.
+            # Invalidate previous pending requests.
             EmailChangeRequest.objects.filter(
                 user=request.user,
                 used=False,
             ).update(used=True)
 
+            # Generate a six-digit verification code.
+            code = f"{secrets.randbelow(1_000_000):06d}"
+
             change_request = EmailChangeRequest.objects.create(
                 user=request.user,
                 new_email=new_email,
+                verification_code=code,
             )
 
-            confirmation_url = request.build_absolute_uri(
-                reverse(
-                    "accounts:confirm_email_change",
-                    kwargs={"token": change_request.token},
+            try:
+                send_mail(
+                    subject="Your ResourceHub email verification code",
+                    message=(
+                        f"Hello {request.user.username},\n\n"
+                        "You requested to change your ResourceHub "
+                        "email address.\n\n"
+                        f"Your six-digit verification code is: {code}\n\n"
+                        "Enter this code on the verification page "
+                        "to confirm your new email address.\n\n"
+                        "This code expires according to your "
+                        "email-change request expiry settings.\n\n"
+                        "If you did not request this change, "
+                        "you can ignore this email.\n\n"
+                        "ResourceHub Team"
+                    ),
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[new_email],
+                    fail_silently=False,
                 )
-            )
 
-            send_mail(
-                subject="Confirm your new ResourceHub email",
-                message=(
-                    "Confirm your new email address using this link:\n"
-                    f"{confirmation_url}\n\n"
-                    "Your email address will not change until "
-                    "you confirm it. This link expires in 24 hours."
-                ),
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[new_email],
-                fail_silently=False,
-            )
+            except Exception:
+                # Invalidate the request if sending the email fails.
+                change_request.used = True
+                change_request.save(update_fields=["used"])
+
+                messages.error(
+                    request,
+                    "We couldn't send the verification email. "
+                    "Please check the email configuration and try again.",
+                )
+
+                return redirect("accounts:change_email")
 
             messages.success(
                 request,
-                "A confirmation link has been sent to your new email.",
+                f"A six-digit verification code has been sent to "
+                f"{new_email}.",
             )
 
-            return redirect("accounts:profile")
+            return redirect(
+                "accounts:verify_email_change",
+                token=change_request.token,
+            )
 
     else:
         form = ChangeEmailForm(user=request.user)
@@ -282,63 +301,111 @@ def change_email(request):
 
 
 # ==========================================================
-# Confirm email change
+# Verify email change using a six-digit code
 # ==========================================================
 
 @login_required
-def confirm_email_change(request, token):
+def verify_email_change(request, token):
     change_request = get_object_or_404(
         EmailChangeRequest,
         token=token,
         user=request.user,
     )
 
+    # Check expiry and whether the request has already been used.
     if not change_request.is_valid():
         messages.error(
             request,
-            "This email-change link has expired or was already used.",
+            "This verification request has expired or was already used. "
+            "Please request a new code.",
         )
 
         return redirect("accounts:change_email")
 
-    # Ensure the new email address is not used by another account.
-    email_in_use = User.objects.filter(
-        email__iexact=change_request.new_email,
-    ).exclude(
-        pk=request.user.pk,
-    ).exists()
+    if request.method == "POST":
+        code = request.POST.get("code", "").strip()
 
-    if email_in_use:
-        messages.error(
-            request,
-            "That email address is already in use. "
-            "Please request a different one.",
-        )
+        # Validate the code format.
+        if not code.isdigit() or len(code) != 6:
+            messages.error(
+                request,
+                "Please enter a valid six-digit verification code.",
+            )
 
-        return redirect("accounts:change_email")
+        elif not secrets.compare_digest(
+            code,
+            change_request.verification_code,
+        ):
+            messages.error(
+                request,
+                "The verification code is incorrect. Please try again.",
+            )
 
-    user = request.user
-    user.email = change_request.new_email
+        else:
+            # Check again that another account hasn't claimed this email.
+            email_in_use = User.objects.filter(
+                email__iexact=change_request.new_email,
+            ).exclude(
+                pk=request.user.pk,
+            ).exists()
 
-    # Keep this if email_verified still exists in your User model.
-    user.email_verified = True
+            if email_in_use:
+                messages.error(
+                    request,
+                    "This email address is already in use. "
+                    "Please request a different one.",
+                )
 
-    user.save(
-        update_fields=["email", "email_verified"],
-    )
+                return redirect("accounts:change_email")
 
-    change_request.used = True
-    change_request.save(update_fields=["used"])
+            # Update the email only after successful verification.
+            with transaction.atomic():
+                user = User.objects.select_for_update().get(
+                    pk=request.user.pk,
+                )
 
-    # Invalidate other pending email-change requests.
-    EmailChangeRequest.objects.filter(
-        user=user,
-        used=False,
-    ).update(used=True)
+                # Recheck email uniqueness inside the transaction.
+                email_in_use = User.objects.filter(
+                    email__iexact=change_request.new_email,
+                ).exclude(
+                    pk=user.pk,
+                ).exists()
 
-    messages.success(
+                if email_in_use:
+                    messages.error(
+                        request,
+                        "This email address is already in use.",
+                    )
+
+                    return redirect("accounts:change_email")
+
+                user.email = change_request.new_email
+                user.email_verified = True
+
+                user.save(
+                    update_fields=["email", "email_verified"],
+                )
+
+                change_request.used = True
+                change_request.save(
+                    update_fields=["used"],
+                )
+
+                # Invalidate any other pending requests for this user.
+                EmailChangeRequest.objects.filter(
+                    user=user,
+                    used=False,
+                ).update(used=True)
+
+            messages.success(
+                request,
+                "Your email address has been changed successfully.",
+            )
+
+            return redirect("accounts:profile")
+
+    return render(
         request,
-        "Your email address has been changed successfully.",
+        "accounts/verify_email_change.html",
+        {"change_request": change_request},
     )
-
-    return redirect("accounts:profile")

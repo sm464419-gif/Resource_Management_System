@@ -118,6 +118,10 @@ class EmailChangeRequest(models.Model):
     used = models.BooleanField(
         default=False,
     )
+    verification_code = models.CharField(
+        max_length=6,
+        blank=True,
+    )
 
     def is_valid(self):
         return (

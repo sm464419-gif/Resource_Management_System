@@ -1,0 +1,56 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Verify new email{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/accounts.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="auth-page">
+  <div class="auth-card">
+    <span class="auth-icon">
+      <i class="fa-regular fa-envelope" aria-hidden="true"></i>
+    </span>
+
+    <h1>Verify your new email</h1>
+
+    <p class="auth-sub">
+      Enter the six-digit code sent to
+      <strong>{{ change_request.new_email }}</strong>.
+    </p>
+
+    <form method="post" class="auth-form">
+      {% csrf_token %}
+
+      <div class="field">
+        <label for="code">Verification code</label>
+        <input
+          type="text"
+          id="code"
+          name="code"
+          inputmode="numeric"
+          pattern="[0-9]{6}"
+          maxlength="6"
+          minlength="6"
+          autocomplete="one-time-code"
+          placeholder="Enter 6-digit code"
+          autofocus
+          required
+        >
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-lg btn-block">
+        Verify email
+      </button>
+    </form>
+
+    <p class="auth-foot">
+      <a class="auth-link" href="{% url 'accounts:change_email' %}">
+        Cancel
+      </a>
+    </p>
+  </div>
+</section>
+{% endblock %}
