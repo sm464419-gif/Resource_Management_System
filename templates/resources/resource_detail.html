@@ -1,0 +1,52 @@
+{% extends 'core/base.html' %}
+{% load static %}
+{% block title %}{{ resource.name }}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/resources.css' %}">{% endblock %}
+
+{% block content %}
+<section class="page-head">
+  <div class="container">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="{% url 'resources:resource_list' %}">Resources</a>
+      <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+      <span>{{ resource.name }}</span>
+    </nav>
+    <div class="page-head-inner">
+      <div>
+        <h1>{{ resource.name }}</h1>
+        <p><span class="chip">{{ resource.category.name }}</span> <span class="badge badge-{{ resource.status|lower|slugify }}">{{ resource.status }}</span></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container detail-layout">
+    <div class="panel">
+      <h2 class="panel-title">About this resource</h2>
+      <p class="detail-desc">{{ resource.description|linebreaksbr }}</p>
+
+      <h2 class="panel-title">Details</h2>
+      <dl class="info-grid">
+        <div><dt>Department</dt><dd>{{ resource.department }}</dd></div>
+        <div><dt>Location</dt><dd>{{ resource.location }}</dd></div>
+        <div><dt>Capacity</dt><dd>{{ resource.capacity }} people</dd></div>
+        <div><dt>Opening hours</dt><dd>{{ resource.open_time|time:"H:i" }} – {{ resource.close_time|time:"H:i" }}</dd></div>
+        <div><dt>QR code</dt><dd>{{ resource.qr_code }}</dd></div>
+        <div><dt>Device code</dt><dd>{{ resource.device_code }}</dd></div>
+      </dl>
+    </div>
+
+    <aside class="panel side-panel">
+      <h2 class="panel-title">Actions</h2>
+      <a class="btn btn-primary btn-block btn-lg" href="#"><i class="fa-regular fa-calendar-check" aria-hidden="true"></i> Book this resource</a>
+      <a class="btn btn-outline btn-block" href="{% url 'resources:resource_list' %}"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Back to resources</a>
+      {% if user.is_staff %}
+      <hr>
+      <a class="btn btn-outline btn-block" href="{% url 'resources:resource_update' resource.pk %}"><i class="fa-regular fa-pen-to-square" aria-hidden="true"></i> Edit resource</a>
+      <a class="btn btn-danger btn-block" href="{% url 'resources:resource_delete' resource.pk %}"><i class="fa-regular fa-trash-can" aria-hidden="true"></i> Delete resource</a>
+      {% endif %}
+    </aside>
+  </div>
+</section>
+{% endblock %}

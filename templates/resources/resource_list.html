@@ -1,0 +1,75 @@
+{% extends 'core/base.html' %}
+{% load static %}
+{% block title %}Resources{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/resources.css' %}">{% endblock %}
+
+{% block content %}
+<section class="page-head">
+  <div class="container page-head-inner">
+    <div>
+      <h1>Campus resources</h1>
+      <p>Browse rooms, labs and equipment you can book.</p>
+    </div>
+    {% if user.is_staff %}
+    <div class="head-actions">
+      <a class="btn btn-outline" href="{% url 'resources:category_management' %}"><i class="fa-solid fa-tags" aria-hidden="true"></i> Categories</a>
+      <a class="btn btn-primary" href="{% url 'resources:resource_create' %}"><i class="fa-solid fa-plus" aria-hidden="true"></i> Add resource</a>
+    </div>
+    {% endif %}
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <form class="filter-bar" method="get" role="search">
+      <div class="filter-search">
+        <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+        <input type="search" name="q" value="{{ request.GET.q }}" placeholder="Search by name, location or department" aria-label="Search resources">
+      </div>
+      <select name="category" aria-label="Filter by category">
+        <option value="">All categories</option>
+        {% for c in categories %}
+        <option value="{{ c.pk }}"{% if request.GET.category == c.pk|stringformat:"s" %} selected{% endif %}>{{ c.name }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit" class="btn btn-primary">Filter</button>
+      {% if request.GET.q or request.GET.category %}<a class="btn btn-outline" href="{% url 'resources:resource_list' %}">Clear</a>{% endif %}
+    </form>
+
+    {% if resources %}
+    <p class="result-count">{{ resources|length }} resource{{ resources|length|pluralize }} found</p>
+    <div class="resource-grid">
+      {% for r in resources %}
+      <article class="resource-card">
+        <div class="card-top">
+          <span class="chip">{{ r.category.name }}</span>
+          <span class="badge badge-{{ r.status|lower|slugify }}">{{ r.status }}</span>
+        </div>
+        <h2><a href="{% url 'resources:resource_detail' r.pk %}">{{ r.name }}</a></h2>
+        <ul class="meta-list">
+          <li><i class="fa-solid fa-location-dot" aria-hidden="true"></i> {{ r.location }}</li>
+          <li><i class="fa-solid fa-building-columns" aria-hidden="true"></i> {{ r.department }}</li>
+          <li><i class="fa-solid fa-users" aria-hidden="true"></i> Capacity {{ r.capacity }}</li>
+          <li><i class="fa-regular fa-clock" aria-hidden="true"></i> {{ r.open_time|time:"H:i" }} – {{ r.close_time|time:"H:i" }}</li>
+        </ul>
+        <div class="card-actions">
+          <a class="btn btn-primary" href="{% url 'resources:resource_detail' r.pk %}">View details</a>
+          {% if user.is_staff %}
+          <a class="icon-btn" href="{% url 'resources:resource_update' r.pk %}" aria-label="Edit {{ r.name }}" title="Edit"><i class="fa-regular fa-pen-to-square" aria-hidden="true"></i></a>
+          <a class="icon-btn icon-danger" href="{% url 'resources:resource_delete' r.pk %}" aria-label="Delete {{ r.name }}" title="Delete"><i class="fa-regular fa-trash-can" aria-hidden="true"></i></a>
+          {% endif %}
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <i class="fa-regular fa-folder-open" aria-hidden="true"></i>
+      <h2>No resources found</h2>
+      <p>Try a different search or category{% if user.is_staff %}, or add the first resource{% endif %}.</p>
+      {% if user.is_staff %}<a class="btn btn-primary" href="{% url 'resources:resource_create' %}">Add resource</a>{% endif %}
+    </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

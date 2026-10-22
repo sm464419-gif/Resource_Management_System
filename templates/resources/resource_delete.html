@@ -1,0 +1,22 @@
+{% extends 'core/base.html' %}
+{% load static %}
+{% block title %}Delete {{ resource.name }}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/resources.css' %}">{% endblock %}
+
+{% block content %}
+<section class="section">
+  <div class="container narrow">
+    <div class="delete-card">
+      <div class="delete-icon"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i></div>
+      <h1>Delete this resource?</h1>
+      <p>You are about to permanently delete <strong>{{ resource.name }}</strong> ({{ resource.category.name }}, {{ resource.location }}). This can't be undone, and any bookings linked to it may be removed too.</p>
+
+      <form method="post" class="delete-actions">
+        {% csrf_token %}
+        <a class="btn btn-outline" href="{% url 'resources:resource_detail' resource.pk %}">Keep resource</a>
+        <button type="submit" class="btn btn-danger">Delete resource</button>
+      </form>
+    </div>
+  </div>
+</section>
+{% endblock %}

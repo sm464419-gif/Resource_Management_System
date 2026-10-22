@@ -48,9 +48,9 @@
                   Resources <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
                 </summary>
                 <ul class="dropdown">
-                  <li><a href="#">All resources</a></li>
+                  <li><a href="{% url 'resources:resource_list' %}">All resources</a></li>
                   {% for cat in nav_categories %}
-                  <li><a href="#">{{ cat.name }}</a></li>
+                  <li><a href="{% url 'resources:resource_list' %}?category={{ cat.id }}">{{ cat.name }}</a></li>
                   {% endfor %}
                 </ul>
               </details>

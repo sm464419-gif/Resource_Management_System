@@ -1,0 +1,77 @@
+{% extends 'core/base.html' %}
+{% load static %}
+{% block title %}Manage categories{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/resources.css' %}">{% endblock %}
+
+{% block content %}
+<section class="page-head">
+  <div class="container">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="{% url 'resources:resource_list' %}">Resources</a>
+      <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+      <span>Categories</span>
+    </nav>
+    <h1>Manage categories</h1>
+    <p>Group resources so people can find them faster.</p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container category-layout">
+
+    <div class="panel">
+      <h2 class="panel-title">{% if editing %}Edit category{% else %}Add category{% endif %}</h2>
+      <form method="post" novalidate>
+        {% csrf_token %}
+        {% for field in form %}
+        <div class="form-field{% if field.errors %} has-error{% endif %}">
+          <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %}<span class="req" aria-hidden="true">*</span>{% endif %}</label>
+          {{ field }}
+          {% for error in field.errors %}<small class="error">{{ error }}</small>{% endfor %}
+        </div>
+        {% endfor %}
+        <div class="form-actions">
+          {% if editing %}<a class="btn btn-outline" href="{% url 'resources:category_management' %}">Cancel</a>{% endif %}
+          <button type="submit" class="btn btn-primary">{% if editing %}Save changes{% else %}Add category{% endif %}</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="panel">
+      <h2 class="panel-title">All categories ({{ categories|length }})</h2>
+      {% if categories %}
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr><th scope="col">Name</th><th scope="col">Description</th><th scope="col">Resources</th><th scope="col"><span class="sr-only">Actions</span></th></tr>
+          </thead>
+          <tbody>
+            {% for cat in categories %}
+            <tr>
+              <td data-label="Name"><strong>{{ cat.name }}</strong></td>
+              <td data-label="Description">{{ cat.description|truncatechars:70 }}</td>
+              <td data-label="Resources">{{ cat.resource_set.count }}</td>
+              <td class="row-actions">
+                <a class="icon-btn" href="?edit={{ cat.pk }}" aria-label="Edit {{ cat.name }}" title="Edit"><i class="fa-regular fa-pen-to-square" aria-hidden="true"></i></a>
+                <form method="post" action="{% url 'resources:category_delete' cat.pk %}" onsubmit="return confirm('Delete {{ cat.name|escapejs }}? Resources in this category will also be deleted.');">
+                  {% csrf_token %}
+                  <button type="submit" class="icon-btn icon-danger" aria-label="Delete {{ cat.name }}" title="Delete"><i class="fa-regular fa-trash-can" aria-hidden="true"></i></button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="empty-state small">
+        <i class="fa-solid fa-tags" aria-hidden="true"></i>
+        <h2>No categories yet</h2>
+        <p>Add your first category using the form.</p>
+      </div>
+      {% endif %}
+    </div>
+
+  </div>
+</section>
+{% endblock %}

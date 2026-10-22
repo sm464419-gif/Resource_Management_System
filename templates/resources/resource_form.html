@@ -1,0 +1,46 @@
+{% extends 'core/base.html' %}
+{% load static %}
+{% block title %}{% if resource %}Edit {{ resource.name }}{% else %}Add resource{% endif %}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/resources.css' %}">{% endblock %}
+
+{% block content %}
+<section class="page-head">
+  <div class="container">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="{% url 'resources:resource_list' %}">Resources</a>
+      <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+      <span>{% if resource %}Edit{% else %}New{% endif %}</span>
+    </nav>
+    <h1>{% if resource %}Edit {{ resource.name }}{% else %}Add a resource{% endif %}</h1>
+    <p>{% if resource %}Update the details people see when booking.{% else %}Fill in the details people will see when booking.{% endif %}</p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container narrow">
+    <form method="post" class="form-card" novalidate>
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+      <div class="message message-error">{{ form.non_field_errors }}</div>
+      {% endif %}
+
+      <div class="form-grid">
+        {% for field in form %}
+        <div class="form-field{% if field.name == 'description' or field.name == 'name' %} full{% endif %}{% if field.errors %} has-error{% endif %}">
+          <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %}<span class="req" aria-hidden="true">*</span>{% endif %}</label>
+          {{ field }}
+          {% if field.help_text %}<small class="help">{{ field.help_text }}</small>{% endif %}
+          {% for error in field.errors %}<small class="error">{{ error }}</small>{% endfor %}
+        </div>
+        {% endfor %}
+      </div>
+
+      <div class="form-actions">
+        <a class="btn btn-outline" href="{% if resource %}{% url 'resources:resource_detail' resource.pk %}{% else %}{% url 'resources:resource_list' %}{% endif %}">Cancel</a>
+        <button type="submit" class="btn btn-primary">{% if resource %}Save changes{% else %}Add resource{% endif %}</button>
+      </div>
+    </form>
+  </div>
+</section>
+{% endblock %}
