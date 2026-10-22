@@ -1,3 +1,4 @@
+#Mymuna
 """
 Django settings for RMS project.
 
