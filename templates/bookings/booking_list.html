@@ -1,0 +1,77 @@
+{% extends 'core/base.html' %}
+{% load static %}
+{% block title %}My bookings{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/bookings.css' %}">{% endblock %}
+
+{% block content %}
+<section class="page-head">
+  <div class="container page-head-inner">
+    <div>
+      <h1>My bookings</h1>
+      <p>Everything you have reserved, in one place.</p>
+    </div>
+    <div class="head-actions">
+      <a class="btn btn-outline" href="{% url 'bookings:booking_calendar' %}"><i class="fa-regular fa-calendar" aria-hidden="true"></i> Calendar</a>
+      <a class="btn btn-outline" href="{% url 'bookings:booking_history' %}"><i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i> History</a>
+      <a class="btn btn-primary" href="{% url 'bookings:create_booking' %}"><i class="fa-solid fa-plus" aria-hidden="true"></i> New booking</a>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <nav class="tabs" aria-label="Filter by status">
+      <a class="tab{% if not request.GET.status %} active{% endif %}" href="{% url 'bookings:booking_list' %}">All</a>
+      <a class="tab{% if request.GET.status == 'Pending' %} active{% endif %}" href="?status=Pending">Pending</a>
+      <a class="tab{% if request.GET.status == 'Approved' %} active{% endif %}" href="?status=Approved">Approved</a>
+      <a class="tab{% if request.GET.status == 'Cancelled' %} active{% endif %}" href="?status=Cancelled">Cancelled</a>
+    </nav>
+
+    {% if bookings %}
+    <div class="panel flush">
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th scope="col">Resource</th>
+              {% if user.is_staff %}<th scope="col">Booked by</th>{% endif %}
+              <th scope="col">Date</th>
+              <th scope="col">Time</th>
+              <th scope="col">Status</th>
+              <th scope="col"><span class="sr-only">Actions</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for b in bookings %}
+            <tr>
+              <td data-label="Resource">
+                <a class="row-title" href="{% url 'bookings:booking_detail' b.id %}">{{ b.resource.name }}</a>
+                <small class="row-sub">{{ b.purpose|truncatechars:48 }}</small>
+              </td>
+              {% if user.is_staff %}<td data-label="Booked by">{{ b.user.get_full_name|default:b.user.username }}</td>{% endif %}
+              <td data-label="Date">{{ b.start_time|date:"D, d M Y" }}</td>
+              <td data-label="Time">{{ b.start_time|time:"H:i" }} – {{ b.end_time|time:"H:i" }}</td>
+              <td data-label="Status"><span class="badge badge-{{ b.status|lower|slugify }}">{{ b.status }}</span></td>
+              <td class="row-actions">
+                <a class="icon-btn" href="{% url 'bookings:booking_detail' b.id %}" aria-label="View booking" title="View"><i class="fa-regular fa-eye" aria-hidden="true"></i></a>
+                {% if b.status != 'Cancelled' %}
+                <a class="icon-btn icon-danger" href="{% url 'bookings:cancel_booking' b.id %}" aria-label="Cancel booking" title="Cancel"><i class="fa-solid fa-ban" aria-hidden="true"></i></a>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <i class="fa-regular fa-calendar-plus" aria-hidden="true"></i>
+      <h2>No bookings yet</h2>
+      <p>Pick a room, lab or piece of equipment and reserve a time slot.</p>
+      <a class="btn btn-primary" href="{% url 'bookings:create_booking' %}">Book a resource</a>
+    </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,22 @@
+{% extends 'core/base.html' %}
+{% load static %}
+{% block title %}Cancel booking{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/bookings.css' %}">{% endblock %}
+
+{% block content %}
+<section class="section">
+  <div class="container narrow">
+    <div class="delete-card">
+      <div class="delete-icon"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i></div>
+      <h1>Cancel this booking?</h1>
+      <p>You are about to cancel <strong>{{ booking.resource.name }}</strong> on <strong>{{ booking.start_time|date:"D, d M Y" }}</strong>, {{ booking.start_time|time:"H:i" }} – {{ booking.end_time|time:"H:i" }}. The time slot will be released for others.</p>
+
+      <form method="post" class="delete-actions">
+        {% csrf_token %}
+        <a class="btn btn-outline" href="{% url 'bookings:booking_detail' booking.id %}">Keep booking</a>
+        <button type="submit" class="btn btn-danger">Cancel booking</button>
+      </form>
+    </div>
+  </div>
+</section>
+{% endblock %}

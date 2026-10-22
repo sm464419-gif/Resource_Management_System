@@ -1,0 +1,57 @@
+{% extends 'core/base.html' %}
+{% load static %}
+{% block title %}Booking history{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/bookings.css' %}">{% endblock %}
+
+{% block content %}
+<section class="page-head">
+  <div class="container">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="{% url 'bookings:booking_list' %}">Bookings</a>
+      <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+      <span>History</span>
+    </nav>
+    <div class="page-head-inner">
+      <div>
+        <h1>Booking history</h1>
+        <p>Past and cancelled bookings. Book the same resource again in one click.</p>
+      </div>
+      <a class="btn btn-outline" href="{% url 'bookings:booking_list' %}"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Current bookings</a>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    {% if bookings %}
+    <p class="result-count">{{ bookings|length }} booking{{ bookings|length|pluralize }}</p>
+    <div class="history-list">
+      {% for b in bookings %}
+      <article class="history-item">
+        <div class="history-date">
+          <strong>{{ b.start_time|date:"d" }}</strong>
+          <span>{{ b.start_time|date:"M Y" }}</span>
+        </div>
+        <div class="history-body">
+          <h2><a href="{% url 'bookings:booking_detail' b.id %}">{{ b.resource.name }}</a></h2>
+          <p class="row-sub">{{ b.start_time|time:"H:i" }} – {{ b.end_time|time:"H:i" }} &bull; {{ b.resource.location }}</p>
+          <p class="history-purpose">{{ b.purpose|truncatechars:90 }}</p>
+        </div>
+        <div class="history-side">
+          <span class="badge badge-{{ b.status|lower|slugify }}">{{ b.status }}</span>
+          <a class="btn btn-outline" href="{% url 'bookings:create_booking' %}?resource={{ b.resource.pk }}">Book again</a>
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i>
+      <h2>No past bookings</h2>
+      <p>Completed and cancelled bookings will show up here.</p>
+      <a class="btn btn-primary" href="{% url 'bookings:create_booking' %}">Make a booking</a>
+    </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

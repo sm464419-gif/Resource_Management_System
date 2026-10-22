@@ -1,0 +1,55 @@
+{% extends 'core/base.html' %}
+{% load static %}
+{% block title %}Booking calendar{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/bookings.css' %}">{% endblock %}
+
+{% block content %}
+<section class="page-head">
+  <div class="container page-head-inner">
+    <div>
+      <h1>Booking calendar</h1>
+      <p>See what is booked each day of the month.</p>
+    </div>
+    <div class="head-actions">
+      <a class="btn btn-outline" href="{% url 'bookings:booking_list' %}"><i class="fa-solid fa-list" aria-hidden="true"></i> List view</a>
+      <a class="btn btn-primary" href="{% url 'bookings:create_booking' %}"><i class="fa-solid fa-plus" aria-hidden="true"></i> New booking</a>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="cal-head">
+      <a class="icon-btn" href="?month={{ prev_month }}" aria-label="Previous month"><i class="fa-solid fa-chevron-left" aria-hidden="true"></i></a>
+      <h2>{{ month_label }}</h2>
+      <a class="icon-btn" href="?month={{ next_month }}" aria-label="Next month"><i class="fa-solid fa-chevron-right" aria-hidden="true"></i></a>
+      <a class="btn btn-outline cal-today" href="{% url 'bookings:booking_calendar' %}">Today</a>
+    </div>
+
+    <div class="cal-scroll">
+      <div class="calendar" role="grid" aria-label="{{ month_label }}">
+        <div class="cal-dow">Sun</div><div class="cal-dow">Mon</div><div class="cal-dow">Tue</div>
+        <div class="cal-dow">Wed</div><div class="cal-dow">Thu</div><div class="cal-dow">Fri</div><div class="cal-dow">Sat</div>
+
+        {% for week in weeks %}{% for day in week %}
+        <div class="cal-day{% if not day.in_month %} muted{% endif %}{% if day.is_today %} today{% endif %}">
+          <span class="cal-num">{{ day.date.day }}</span>
+          {% for b in day.bookings|slice:":3" %}
+          <a class="cal-event ev-{{ b.status|lower|slugify }}" href="{% url 'bookings:booking_detail' b.id %}" title="{{ b.resource.name }} ({{ b.status }})">
+            {{ b.start_time|time:"H:i" }} {{ b.resource.name }}
+          </a>
+          {% endfor %}
+          {% if day.bookings|length > 3 %}<span class="cal-more">+{{ day.bookings|length|add:"-3" }} more</span>{% endif %}
+        </div>
+        {% endfor %}{% endfor %}
+      </div>
+    </div>
+
+    <ul class="legend" aria-label="Legend">
+      <li><span class="dot ev-pending"></span> Pending</li>
+      <li><span class="dot ev-approved"></span> Approved</li>
+      <li><span class="dot ev-cancelled"></span> Cancelled</li>
+    </ul>
+  </div>
+</section>
+{% endblock %}

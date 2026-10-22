@@ -23,6 +23,6 @@ urlpatterns = [
     path("accounts/", include("accounts.urls")),
 
     path("resources/", include("resources.urls")),
-
+    path("bookings/", include("bookings.urls")),
 
 ]

@@ -1,0 +1,66 @@
+{% extends 'core/base.html' %}
+{% load static %}
+{% block title %}Book a resource{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/bookings.css' %}">{% endblock %}
+
+{% block content %}
+<section class="page-head">
+  <div class="container">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="{% url 'bookings:booking_list' %}">Bookings</a>
+      <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+      <span>New booking</span>
+    </nav>
+    <h1>Book a resource</h1>
+    <p>Choose what you need, pick a time slot and tell us what it's for.</p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container narrow">
+    <form method="post" class="form-card" id="bookingForm">
+      {% csrf_token %}
+
+      <div class="form-grid">
+        <div class="form-field full">
+          <label for="resource">Resource<span class="req" aria-hidden="true">*</span></label>
+          <select id="resource" name="resource" required>
+            <option value="">Select a resource</option>
+            {% for r in resources %}
+            <option value="{{ r.pk }}"{% if request.GET.resource == r.pk|stringformat:"s" %} selected{% endif %}>{{ r.name }} – {{ r.location }} ({{ r.category.name }})</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-field">
+          <label for="start_time">Start<span class="req" aria-hidden="true">*</span></label>
+          <input type="datetime-local" id="start_time" name="start_time" required>
+        </div>
+
+        <div class="form-field">
+          <label for="end_time">End<span class="req" aria-hidden="true">*</span></label>
+          <input type="datetime-local" id="end_time" name="end_time" required>
+          <small class="help">Must be after the start time.</small>
+        </div>
+
+        <div class="form-field full">
+          <label for="purpose">Purpose<span class="req" aria-hidden="true">*</span></label>
+          <textarea id="purpose" name="purpose" required placeholder="e.g. Group project meeting, lab practical, thesis presentation"></textarea>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <a class="btn btn-outline" href="{% url 'bookings:booking_list' %}">Cancel</a>
+        <button type="submit" class="btn btn-primary">Confirm booking</button>
+      </div>
+    </form>
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  const s = document.getElementById('start_time'), e = document.getElementById('end_time');
+  s.addEventListener('change', () => { e.min = s.value; if (e.value && e.value <= s.value) e.value = ''; });
+</script>
+{% endblock %}
