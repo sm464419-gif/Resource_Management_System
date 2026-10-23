@@ -1,0 +1,146 @@
+{% extends 'core/base.html' %}
+{% load static %}
+{% block title %}Conflict #{{ conflict.pk }}{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/bookings.css' %}">
+<link rel="stylesheet" href="{% static 'css/conflicts.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="page-head">
+  <div class="container">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="{% url 'bookings:booking_list' %}">Bookings</a>
+      <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+      <a href="{% url 'bookings:conflict_list' %}">Conflicts</a>
+      <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+      <span>Conflict #{{ conflict.pk }}</span>
+    </nav>
+    <div class="page-head-inner">
+      <div>
+        <h1>{{ conflict.booking_a.resource.name }}</h1>
+        <p><span class="badge badge-{{ conflict.status|lower|slugify }}">{{ conflict.status }}</span>
+           <span class="chip"><i class="fa-regular fa-calendar" aria-hidden="true"></i> {{ conflict.booking_a.start_time|date:"D, d M Y" }}</span></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container detail-layout">
+    <div class="conflict-main">
+
+      <!-- Side-by-side comparison -->
+      <div class="compare">
+        {% with a=conflict.booking_a %}
+        <article class="compare-card">
+          <header class="compare-head">
+            <span class="compare-tag">Booking A</span>
+            {% if a.priority_score >= conflict.booking_b.priority_score %}<span class="chip">Higher priority</span>{% endif %}
+          </header>
+          <h2 class="compare-title"><a href="{% url 'bookings:booking_detail' a.pk %}">#{{ a.pk }} · {{ a.user.get_full_name|default:a.user.username }}</a></h2>
+          <dl class="compare-list">
+            <div><dt>Time</dt><dd>{{ a.start_time|time:"H:i" }} – {{ a.end_time|time:"H:i" }}</dd></div>
+            <div><dt>Status</dt><dd><span class="badge badge-{{ a.status|lower|slugify }}">{{ a.status }}</span></dd></div>
+            <div><dt>Priority score</dt><dd>{{ a.priority_score }}</dd></div>
+            <div><dt>Created</dt><dd>{{ a.created_at|date:"d M, H:i" }}</dd></div>
+            <div class="full"><dt>Purpose</dt><dd>{{ a.purpose|truncatechars:120 }}</dd></div>
+          </dl>
+        </article>
+        {% endwith %}
+
+        <div class="compare-vs" aria-hidden="true"><span>VS</span></div>
+
+        {% with b=conflict.booking_b %}
+        <article class="compare-card">
+          <header class="compare-head">
+            <span class="compare-tag">Booking B</span>
+            {% if b.priority_score > conflict.booking_a.priority_score %}<span class="chip">Higher priority</span>{% endif %}
+          </header>
+          <h2 class="compare-title"><a href="{% url 'bookings:booking_detail' b.pk %}">#{{ b.pk }} · {{ b.user.get_full_name|default:b.user.username }}</a></h2>
+          <dl class="compare-list">
+            <div><dt>Time</dt><dd>{{ b.start_time|time:"H:i" }} – {{ b.end_time|time:"H:i" }}</dd></div>
+            <div><dt>Status</dt><dd><span class="badge badge-{{ b.status|lower|slugify }}">{{ b.status }}</span></dd></div>
+            <div><dt>Priority score</dt><dd>{{ b.priority_score }}</dd></div>
+            <div><dt>Created</dt><dd>{{ b.created_at|date:"d M, H:i" }}</dd></div>
+            <div class="full"><dt>Purpose</dt><dd>{{ b.purpose|truncatechars:120 }}</dd></div>
+          </dl>
+        </article>
+        {% endwith %}
+      </div>
+
+      <!-- Resolution -->
+      <div class="panel">
+        {% if conflict.status == 'Resolved' %}
+        <h2 class="panel-title">Resolution</h2>
+        <div class="resolved-box">
+          <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
+          <div>
+            <strong>{{ conflict.get_resolution_display }}</strong>
+            <p>Resolved {{ conflict.resolved_at|date:"d M Y, H:i" }}{% if conflict.resolved_by %} by {{ conflict.resolved_by.get_full_name|default:conflict.resolved_by.username }}{% endif %}.</p>
+            {% if conflict.notes %}<p class="resolved-notes">{{ conflict.notes|linebreaksbr }}</p>{% endif %}
+          </div>
+        </div>
+        {% else %}
+        <h2 class="panel-title">Choose a resolution</h2>
+        <form method="post" id="resolveForm">
+          {% csrf_token %}
+          <div class="option-list" role="radiogroup" aria-label="Resolution">
+            <label class="option">
+              <input type="radio" name="resolution" value="keep_a" required>
+              <span class="option-body">
+                <i class="fa-solid fa-a" aria-hidden="true"></i>
+                <span><strong>Keep Booking A</strong><small>Cancel Booking B and release its slot.</small></span>
+              </span>
+            </label>
+            <label class="option">
+              <input type="radio" name="resolution" value="keep_b">
+              <span class="option-body">
+                <i class="fa-solid fa-b" aria-hidden="true"></i>
+                <span><strong>Keep Booking B</strong><small>Cancel Booking A and release its slot.</small></span>
+              </span>
+            </label>
+            <label class="option">
+              <input type="radio" name="resolution" value="reschedule">
+              <span class="option-body">
+                <i class="fa-solid fa-calendar-day" aria-hidden="true"></i>
+                <span><strong>Ask to reschedule</strong><small>Notify the later booker to choose another time.</small></span>
+              </span>
+            </label>
+            <label class="option">
+              <input type="radio" name="resolution" value="waitlist">
+              <span class="option-body">
+                <i class="fa-solid fa-hourglass-half" aria-hidden="true"></i>
+                <span><strong>Move to waitlist</strong><small>Put the later booking on the waitlist for this slot.</small></span>
+              </span>
+            </label>
+          </div>
+
+          <div class="form-field full conflict-notes">
+            <label for="notes">Note <span class="optional">(optional)</span></label>
+            <textarea id="notes" name="notes" placeholder="Reason for this decision, shared with both users"></textarea>
+          </div>
+
+          <div class="form-actions">
+            <a class="btn btn-outline" href="{% url 'bookings:conflict_list' %}">Back</a>
+            <button type="submit" class="btn btn-primary">Apply resolution</button>
+          </div>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+
+    <aside class="panel side-panel">
+      <h2 class="panel-title">Conflict info</h2>
+      <dl class="side-info">
+        <div><dt>Resource</dt><dd>{{ conflict.booking_a.resource.name }}</dd></div>
+        <div><dt>Location</dt><dd>{{ conflict.booking_a.resource.location }}</dd></div>
+        <div><dt>Detected</dt><dd>{{ conflict.detected_at|date:"d M Y, H:i" }}</dd></div>
+      </dl>
+      <hr>
+      <a class="btn btn-outline btn-block" href="{% url 'resources:resource_detail' conflict.booking_a.resource.pk %}"><i class="fa-solid fa-door-open" aria-hidden="true"></i> View resource</a>
+      <a class="btn btn-outline btn-block" href="{% url 'bookings:conflict_list' %}"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> All conflicts</a>
+    </aside>
+  </div>
+</section>
+{% endblock %}

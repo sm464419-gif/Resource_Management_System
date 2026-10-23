@@ -1,0 +1,117 @@
+{% extends 'core/base.html' %}
+{% load static %}
+{% block title %}Waitlist{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/bookings.css' %}">
+<link rel="stylesheet" href="{% static 'css/conflicts.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="page-head">
+  <div class="container">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="{% url 'bookings:booking_list' %}">Bookings</a>
+      <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+      <span>Waitlist</span>
+    </nav>
+    <div class="page-head-inner">
+      <div>
+        <h1>Waitlist</h1>
+        <p>Resource already taken? Join the queue and we will notify you when it frees up.</p>
+      </div>
+      <div class="head-actions">
+        <a class="btn btn-outline" href="{% url 'bookings:booking_list' %}"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Bookings</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container detail-layout">
+
+    <!-- My waitlist entries -->
+    <div>
+      <h2 class="panel-title">Your places in line</h2>
+
+      {% if entries %}
+      <div class="wait-list">
+        {% for w in entries %}
+        <article class="wait-item">
+          <div class="wait-pos{% if w.position == 1 %} first{% endif %}" aria-label="Position {{ w.position }}">
+            <small>Position</small>
+            <strong>#{{ w.position }}</strong>
+          </div>
+          <div class="wait-body">
+            <h3><a href="{% url 'resources:resource_detail' w.resource.pk %}">{{ w.resource.name }}</a></h3>
+            <p class="row-sub">{{ w.start_time|date:"D, d M Y" }} &bull; {{ w.start_time|time:"H:i" }} – {{ w.end_time|time:"H:i" }}</p>
+            <p class="wait-ahead">
+              {% if w.status == 'Notified' %}
+                <i class="fa-solid fa-bell" aria-hidden="true"></i> A slot is available. Book it now!
+              {% elif w.position == 1 %}
+                <i class="fa-solid fa-star" aria-hidden="true"></i> You are next in line.
+              {% else %}
+                <i class="fa-solid fa-users" aria-hidden="true"></i> {{ w.position|add:"-1" }} {{ w.position|add:"-1"|pluralize:"person,people" }} ahead of you
+              {% endif %}
+            </p>
+            <small class="row-sub">Joined {{ w.created_at|date:"d M Y, H:i" }}</small>
+          </div>
+          <div class="wait-side">
+            <span class="badge badge-{{ w.status|lower|slugify }}">{{ w.status }}</span>
+            {% if w.status == 'Notified' %}
+            <a class="btn btn-primary btn-sm" href="{% url 'bookings:create_booking' %}?resource={{ w.resource.pk }}">Book now</a>
+            {% endif %}
+            {% if w.status == 'Waiting' or w.status == 'Notified' %}
+            <form method="post" action="{% url 'bookings:leave_waitlist' w.pk %}">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-outline btn-sm" onclick="return confirm('Leave the waitlist for {{ w.resource.name|escapejs }}?');">Leave</button>
+            </form>
+            {% endif %}
+          </div>
+        </article>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="empty-state">
+        <i class="fa-solid fa-hourglass-half" aria-hidden="true"></i>
+        <h2>You are not on any waitlist</h2>
+        <p>Join one from the form and track your position here.</p>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Join form -->
+    <aside class="panel side-panel">
+      <h2 class="panel-title">Join the waitlist</h2>
+      <form method="post" class="wait-form" id="waitlistForm">
+        {% csrf_token %}
+        <div class="form-field">
+          <label for="resource">Resource<span class="req" aria-hidden="true">*</span></label>
+          <select id="resource" name="resource" required>
+            <option value="">Select a resource</option>
+            {% for r in resources %}
+            <option value="{{ r.pk }}"{% if request.GET.resource == r.pk|stringformat:"s" %} selected{% endif %}>{{ r.name }} – {{ r.location }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="start_time">Start<span class="req" aria-hidden="true">*</span></label>
+          <input type="datetime-local" id="start_time" name="start_time" required>
+        </div>
+        <div class="form-field">
+          <label for="end_time">End<span class="req" aria-hidden="true">*</span></label>
+          <input type="datetime-local" id="end_time" name="end_time" required>
+          <small class="help">Must be after the start time.</small>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block"><i class="fa-solid fa-hourglass-half" aria-hidden="true"></i> Join waitlist</button>
+      </form>
+    </aside>
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  const s = document.getElementById('start_time'), e = document.getElementById('end_time');
+  s.addEventListener('change', () => { e.min = s.value; if (e.value && e.value <= s.value) e.value = ''; });
+</script>
+{% endblock %}

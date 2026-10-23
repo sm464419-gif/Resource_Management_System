@@ -1,0 +1,91 @@
+{% extends 'core/base.html' %}
+{% load static %}
+{% block title %}Scheduling conflicts{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/bookings.css' %}">
+<link rel="stylesheet" href="{% static 'css/conflicts.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="page-head">
+  <div class="container">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="{% url 'bookings:booking_list' %}">Bookings</a>
+      <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+      <span>Conflicts</span>
+    </nav>
+    <div class="page-head-inner">
+      <div>
+        <h1>Scheduling conflicts</h1>
+        <p>Overlapping bookings that need a decision.</p>
+      </div>
+      <div class="head-actions">
+        <a class="btn btn-outline" href="{% url 'bookings:waitlist' %}"><i class="fa-solid fa-hourglass-half" aria-hidden="true"></i> Waitlist</a>
+        <a class="btn btn-outline" href="{% url 'bookings:booking_list' %}"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Bookings</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <nav class="tabs" aria-label="Filter by status">
+      <a class="tab{% if not request.GET.status %} active{% endif %}" href="{% url 'bookings:conflict_list' %}">All</a>
+      <a class="tab{% if request.GET.status == 'Open' %} active{% endif %}" href="?status=Open">Open</a>
+      <a class="tab{% if request.GET.status == 'Resolved' %} active{% endif %}" href="?status=Resolved">Resolved</a>
+    </nav>
+
+    {% if conflicts %}
+    <p class="result-count">{{ conflicts|length }} conflict{{ conflicts|length|pluralize }}</p>
+    <div class="panel flush">
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th scope="col">Resource</th>
+              <th scope="col">Booking A</th>
+              <th scope="col">Booking B</th>
+              <th scope="col">Detected</th>
+              <th scope="col">Status</th>
+              <th scope="col"><span class="sr-only">Actions</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for c in conflicts %}
+            <tr>
+              <td data-label="Resource">
+                <a class="row-title" href="{% url 'bookings:conflict_detail' c.pk %}">{{ c.booking_a.resource.name }}</a>
+                <small class="row-sub">{{ c.booking_a.start_time|date:"D, d M Y" }}</small>
+              </td>
+              <td data-label="Booking A">
+                <span class="conflict-who">{{ c.booking_a.user.get_full_name|default:c.booking_a.user.username }}</span>
+                <small class="row-sub">{{ c.booking_a.start_time|time:"H:i" }} – {{ c.booking_a.end_time|time:"H:i" }}</small>
+              </td>
+              <td data-label="Booking B">
+                <span class="conflict-who">{{ c.booking_b.user.get_full_name|default:c.booking_b.user.username }}</span>
+                <small class="row-sub">{{ c.booking_b.start_time|time:"H:i" }} – {{ c.booking_b.end_time|time:"H:i" }}</small>
+              </td>
+              <td data-label="Detected">{{ c.detected_at|date:"d M Y, H:i" }}</td>
+              <td data-label="Status"><span class="badge badge-{{ c.status|lower|slugify }}">{{ c.status }}</span></td>
+              <td class="row-actions">
+                <a class="btn btn-outline btn-sm" href="{% url 'bookings:conflict_detail' c.pk %}">
+                  {% if c.status == 'Resolved' %}View{% else %}Review{% endif %}
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <i class="fa-regular fa-circle-check" aria-hidden="true"></i>
+      <h2>No conflicts</h2>
+      <p>Every booking is clear of overlaps right now.</p>
+      <a class="btn btn-primary" href="{% url 'bookings:booking_list' %}">Back to bookings</a>
+    </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}
