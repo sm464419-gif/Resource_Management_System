@@ -1,0 +1,98 @@
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block title %}No-show policy{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/checkin.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="ck-page">
+  <div class="container ck-narrow">
+
+    <nav class="ck-crumbs" aria-label="Breadcrumb">
+      <a href="/">Home</a>
+      <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+      <a href="#">Bookings</a>
+      <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+      <span>No-show policy</span>
+    </nav>
+
+    <header class="ck-head">
+      <h1>No-show policy</h1>
+      <p>Unused bookings keep other students and staff from using shared resources. Here's how we handle them.</p>
+    </header>
+
+    <div class="ck-callout">
+      <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+      <p>If you can't make your booking, cancel it before it starts. Cancelled bookings never count as no-shows.</p>
+    </div>
+
+    <h2 class="ck-h2">What counts as a no-show</h2>
+    <p class="ck-lead">A booking is a no-show when you haven't checked in within 15 minutes of the start time. The slot is then released to the next person.</p>
+
+    <ol class="ck-window ck-window-lg" aria-label="Check-in timeline">
+      <li class="ck-step"><strong>15 min before</strong><span>Check-in opens</span></li>
+      <li class="ck-step"><strong>Start time</strong><span>Check in now to be on time</span></li>
+      <li class="ck-step"><strong>+15 min</strong><span>Check-in counts as late</span></li>
+      <li class="ck-step ck-step-end"><strong>After +15 min</strong><span>Marked as a no-show</span></li>
+    </ol>
+
+    <h2 class="ck-h2">What happens after a no-show</h2>
+    <p class="ck-lead">Consequences build up over a rolling 30 days.</p>
+
+    <div class="ck-table-wrap">
+      <table class="ck-table ck-table-static">
+        <thead>
+          <tr><th scope="col">No-shows in 30 days</th><th scope="col">Result</th></tr>
+        </thead>
+        <tbody>
+          <tr><td data-label="No-shows">1st</td><td data-label="Result">Warning email. Nothing else changes.</td></tr>
+          <tr><td data-label="No-shows">2nd</td><td data-label="Result">You can only hold one active booking for 7 days.</td></tr>
+          <tr><td data-label="No-shows">3rd or more</td><td data-label="Result">Booking is suspended for 14 days. Staff review your account.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2 class="ck-h2">Excused absences</h2>
+    <ul class="ck-list">
+      <li><i class="fa-solid fa-check" aria-hidden="true"></i> Resource was closed, broken, or locked when you arrived.</li>
+      <li><i class="fa-solid fa-check" aria-hidden="true"></i> Class or exam schedule changed by the university.</li>
+      <li><i class="fa-solid fa-check" aria-hidden="true"></i> Illness or emergency, with a note sent within 48 hours.</li>
+    </ul>
+
+    <h2 class="ck-h2">Common questions</h2>
+    <div class="ck-faq">
+      <details>
+        <summary>I checked in late. Does that count as a no-show?</summary>
+        <p>No. Checking in within 15 minutes after the start time is logged as late. Late check-ins don't lead to restrictions, but they appear in your <a href="#">check-in history</a>.</p>
+      </details>
+      <details>
+        <summary>How do I dispute a no-show?</summary>
+        <p>Email the resource manager within 48 hours with your booking ID and a short reason. If the dispute is accepted, the no-show is removed from your record.</p>
+      </details>
+      <details>
+        <summary>Does a group booking count against everyone?</summary>
+        <p>No. The no-show is recorded against the person who made the booking.</p>
+      </details>
+      <details>
+        <summary>When do old no-shows expire?</summary>
+        <p>Each no-show stops counting 30 days after the booking date.</p>
+      </details>
+    </div>
+
+    <div class="ck-cta">
+      <div>
+        <h2>Ready to use your booking?</h2>
+        <p>Check in when you arrive to keep your slot.</p>
+      </div>
+      <div class="ck-cta-actions">
+        <a class="btn btn-primary" href="#">Check in</a>
+        <a class="btn btn-outline" href="#">View history</a>
+      </div>
+    </div>
+
+  </div>
+</section>
+{% endblock %}

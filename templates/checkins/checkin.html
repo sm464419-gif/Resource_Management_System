@@ -1,0 +1,158 @@
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block title %}Check in{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/checkin.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="ck-page">
+  <div class="container">
+
+    <nav class="ck-crumbs" aria-label="Breadcrumb">
+      <a href="/">Home</a>
+      <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+      <a href="#">Bookings</a>
+      <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+      <span>Check in</span>
+    </nav>
+
+    <header class="ck-head">
+      <h1>Check in to your booking</h1>
+      <p>Confirm you've arrived so your slot stays reserved.</p>
+    </header>
+
+    <div class="ck-grid">
+
+      <!-- Booking summary -->
+      <article class="ck-card" aria-labelledby="bookingTitle">
+        <div class="ck-card-top">
+          <span class="ck-icon"><i class="fa-solid fa-door-open" aria-hidden="true"></i></span>
+          <div>
+            <h2 id="bookingTitle">{{ booking.resource.name|default:"Resource name" }}</h2>
+            <p class="ck-muted">{{ booking.resource.category.name|default:"Category" }}</p>
+          </div>
+          <span class="ck-badge ck-badge-{{ booking.status|default:'pending' }}">
+            {{ booking.get_status_display|default:"Confirmed" }}
+          </span>
+        </div>
+
+        <dl class="ck-details">
+          <div><dt><i class="fa-regular fa-calendar" aria-hidden="true"></i> Date</dt>
+               <dd>{{ booking.date|date:"l, j F Y"|default:"—" }}</dd></div>
+          <div><dt><i class="fa-regular fa-clock" aria-hidden="true"></i> Time</dt>
+               <dd>{{ booking.start_time|time:"g:i A"|default:"—" }} – {{ booking.end_time|time:"g:i A"|default:"—" }}</dd></div>
+          <div><dt><i class="fa-solid fa-location-dot" aria-hidden="true"></i> Location</dt>
+               <dd>{{ booking.resource.location|default:"—" }}</dd></div>
+          <div><dt><i class="fa-solid fa-hashtag" aria-hidden="true"></i> Booking ID</dt>
+               <dd>#{{ booking.id|default:"0000" }}</dd></div>
+        </dl>
+
+        <ol class="ck-window" aria-label="Check-in window">
+          <li class="ck-step{% if window_state == 'early' %} is-current{% endif %}">
+            <strong>Opens</strong><span>15 min before start</span>
+          </li>
+          <li class="ck-step{% if window_state == 'open' %} is-current{% endif %}">
+            <strong>On time</strong><span>Up to the start time</span>
+          </li>
+          <li class="ck-step{% if window_state == 'grace' %} is-current{% endif %}">
+            <strong>Late</strong><span>Up to 15 min after</span>
+          </li>
+          <li class="ck-step ck-step-end{% if window_state == 'closed' %} is-current{% endif %}">
+            <strong>No-show</strong><span>Slot is released</span>
+          </li>
+        </ol>
+      </article>
+
+      <!-- Check-in form -->
+      <aside class="ck-card ck-form-card" aria-labelledby="formTitle">
+        <h2 id="formTitle">Confirm arrival</h2>
+
+        {% if booking.checked_in_at %}
+          <div class="ck-alert ck-alert-success" role="status">
+            <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
+            <div>
+              <strong>You're checked in.</strong>
+              <p>Checked in at {{ booking.checked_in_at|time:"g:i A" }}.</p>
+            </div>
+          </div>
+          <a class="btn btn-outline btn-block" href="#">View check-in history</a>
+
+        {% elif window_state == 'early' %}
+          <div class="ck-alert ck-alert-info" role="status">
+            <i class="fa-regular fa-clock" aria-hidden="true"></i>
+            <div>
+              <strong>Check-in isn't open yet.</strong>
+              <p>It opens at {{ window_opens|time:"g:i A"|default:"15 minutes before your start time" }}.</p>
+            </div>
+          </div>
+          <button class="btn btn-primary btn-lg btn-block" type="button" disabled>Check in</button>
+
+        {% elif window_state == 'closed' %}
+          <div class="ck-alert ck-alert-danger" role="alert">
+            <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+            <div>
+              <strong>The check-in window has closed.</strong>
+              <p>This booking is marked as a no-show. Read the <a href="#">no-show policy</a> to see what happens next.</p>
+            </div>
+          </div>
+          <button class="btn btn-primary btn-lg btn-block" type="button" disabled>Check in</button>
+
+        {% else %}
+          {% if window_state == 'grace' %}
+          <div class="ck-alert ck-alert-warning" role="status">
+            <i class="fa-solid fa-hourglass-half" aria-hidden="true"></i>
+            <div>
+              <strong>You're running late.</strong>
+              <p>Check in now to keep your slot. This visit will be logged as late.</p>
+            </div>
+          </div>
+          {% endif %}
+
+          <form method="post" action="#" class="ck-form" novalidate>
+            {% csrf_token %}
+
+            <div class="ck-field">
+              <label for="id_code">Check-in code <span class="ck-muted">(optional)</span></label>
+              <input id="id_code" name="code" type="text" inputmode="text" autocomplete="off"
+                     maxlength="6" placeholder="e.g. 4F7K2A" class="ck-code">
+              <small>Find the code on the sign at the entrance.</small>
+            </div>
+
+            <div class="ck-field">
+              <label for="id_condition">Condition of the resource</label>
+              <select id="id_condition" name="condition">
+                <option value="good">Clean and ready to use</option>
+                <option value="minor">Minor issue (I'll note it below)</option>
+                <option value="unusable">Not usable</option>
+              </select>
+            </div>
+
+            <div class="ck-field">
+              <label for="id_notes">Notes <span class="ck-muted">(optional)</span></label>
+              <textarea id="id_notes" name="notes" rows="3" placeholder="Anything staff should know?"></textarea>
+            </div>
+
+            <label class="ck-check">
+              <input type="checkbox" name="confirm" required>
+              <span>I'm at the location and will follow the usage rules.</span>
+            </label>
+
+            <button type="submit" class="btn btn-primary btn-lg btn-block">
+              <i class="fa-solid fa-check" aria-hidden="true"></i> Check in now
+            </button>
+          </form>
+        {% endif %}
+
+        <p class="ck-foot">
+          <a href="#">Can't make it? Cancel booking</a> &middot;
+          <a href="#">No-show policy</a>
+        </p>
+      </aside>
+
+    </div>
+  </div>
+</section>
+{% endblock %}
