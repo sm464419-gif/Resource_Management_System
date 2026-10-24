@@ -1,4 +1,5 @@
 #Mymuna
+#Sayon
 """
 Django settings for RMS project.
 
