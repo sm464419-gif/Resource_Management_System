@@ -1,0 +1,77 @@
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block title %}Sharing requests{% endblock %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'css/sharings.css' %}">
+{% endblock %}
+
+{% block content %}
+{% with current=request.GET.status %}
+<section class="sh-page">
+  <div class="container">
+
+    <div class="sh-head">
+      <div>
+        <h1 class="sh-title">Sharing requests</h1>
+        <p class="sh-sub">Requests you sent and requests for pools you own.</p>
+      </div>
+      <a class="btn btn-outline" href="{% url 'sharings:shared_pool' %}">
+        <i class="fa-solid fa-people-group" aria-hidden="true"></i> Browse pools
+      </a>
+    </div>
+
+    <nav class="sh-tabs" aria-label="Filter by status">
+      <a href="{% url 'sharings:shared_requests' %}" class="sh-tab{% if not current %} active{% endif %}">All</a>
+      <a href="?status=pending" class="sh-tab{% if current == 'pending' %} active{% endif %}">Pending</a>
+      <a href="?status=approved" class="sh-tab{% if current == 'approved' %} active{% endif %}">Approved</a>
+      <a href="?status=rejected" class="sh-tab{% if current == 'rejected' %} active{% endif %}">Rejected</a>
+    </nav>
+
+    {% if sharing_requests %}
+    <div class="sh-table-wrap">
+      <table class="sh-table">
+        <thead>
+          <tr>
+            <th scope="col">Pool</th>
+            <th scope="col">Resource</th>
+            <th scope="col">Requested by</th>
+            <th scope="col">Sent on</th>
+            <th scope="col">Status</th>
+            <th scope="col"><span class="sr-only">Actions</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for sr in sharing_requests %}
+          <tr>
+            <td data-label="Pool"><strong>{{ sr.pool.name }}</strong></td>
+            <td data-label="Resource">{{ sr.pool.resource.name }}</td>
+            <td data-label="Requested by">
+              {% if sr.requester == user %}You{% else %}{{ sr.requester.get_username }}{% endif %}
+            </td>
+            <td data-label="Sent on">{{ sr.created_at|date:"d M Y" }}</td>
+            <td data-label="Status">
+              <span class="badge badge-{{ sr.status }}">{{ sr.get_status_display }}</span>
+            </td>
+            <td class="sh-actions">
+              <a class="btn btn-outline btn-sm" href="{% url 'sharings:request_detail' sr.pk %}">View</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="sh-empty">
+      <i class="fa-solid fa-inbox" aria-hidden="true"></i>
+      <h2>No requests{% if current %} with this status{% endif %}</h2>
+      <p>Find a pool you want to join and send your first request.</p>
+      <a class="btn btn-primary" href="{% url 'sharings:shared_pool' %}">Browse pools</a>
+    </div>
+    {% endif %}
+
+  </div>
+</section>
+{% endwith %}
+{% endblock %}
