@@ -24,5 +24,6 @@ urlpatterns = [
 
     path("resources/", include("resources.urls")),
     path("bookings/", include("bookings.urls")),
+    path("sharings/", include("sharings.urls")),
 
 ]

@@ -1,0 +1,94 @@
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block title %}Request for {{ sharing_request.pool.name }}{% endblock %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'css/sharings.css' %}">
+{% endblock %}
+
+{% block content %}
+{% with sr=sharing_request %}
+<section class="sh-page">
+  <div class="container sh-narrow">
+
+    <a class="sh-back" href="{% url 'sharings:shared_requests' %}">
+      <i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Back to requests
+    </a>
+
+    <div class="sh-head">
+      <div>
+        <h1 class="sh-title">Request for {{ sr.pool.name }}</h1>
+        <p class="sh-sub">Sent on {{ sr.created_at|date:"d M Y, H:i" }}</p>
+      </div>
+      <span class="badge badge-{{ sr.status }} badge-lg">{{ sr.get_status_display }}</span>
+    </div>
+
+    <div class="sh-panel">
+      <h2 class="sh-panel-title">Request details</h2>
+      <dl class="sh-detail">
+        <div>
+          <dt>Pool</dt>
+          <dd>{{ sr.pool.name }}</dd>
+        </div>
+        <div>
+          <dt>Resource</dt>
+          <dd>{{ sr.pool.resource.name }}</dd>
+        </div>
+        <div>
+          <dt>Pool owner</dt>
+          <dd>{{ sr.pool.owner.get_username }}</dd>
+        </div>
+        <div>
+          <dt>Requested by</dt>
+          <dd>{% if sr.requester == user %}You{% else %}{{ sr.requester.get_username }}{% endif %}</dd>
+        </div>
+        {% if sr.responded_at %}
+        <div>
+          <dt>Answered on</dt>
+          <dd>{{ sr.responded_at|date:"d M Y, H:i" }}</dd>
+        </div>
+        {% endif %}
+      </dl>
+    </div>
+
+    <div class="sh-panel">
+      <h2 class="sh-panel-title">Message</h2>
+      {% if sr.message %}
+        <p class="sh-text">{{ sr.message|linebreaksbr }}</p>
+      {% else %}
+        <p class="sh-text sh-muted">No message was added to this request.</p>
+      {% endif %}
+    </div>
+
+    {% if sr.status == 'pending' %}
+      {% if user == sr.pool.owner %}
+      <div class="sh-panel">
+        <h2 class="sh-panel-title">Respond to this request</h2>
+        <p class="sh-text sh-muted">Approving adds {{ sr.requester.get_username }} to the pool.</p>
+        <form method="post" class="sh-form-actions">
+          {% csrf_token %}
+          <button type="submit" name="action" value="approve" class="btn btn-primary">
+            <i class="fa-solid fa-check" aria-hidden="true"></i> Approve
+          </button>
+          <button type="submit" name="action" value="reject" class="btn btn-danger">
+            <i class="fa-solid fa-xmark" aria-hidden="true"></i> Reject
+          </button>
+        </form>
+      </div>
+      {% elif user == sr.requester %}
+      <div class="sh-panel">
+        <h2 class="sh-panel-title">Changed your mind?</h2>
+        <p class="sh-text sh-muted">You can cancel this request while it is still pending.</p>
+        <form method="post" class="sh-form-actions">
+          {% csrf_token %}
+          <button type="submit" name="action" value="cancel" class="btn btn-danger">Cancel request</button>
+        </form>
+      </div>
+      {% endif %}
+    {% endif %}
+
+  </div>
+</section>
+{% endwith %}
+{% endblock %}
