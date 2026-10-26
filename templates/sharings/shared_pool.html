@@ -1,0 +1,84 @@
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block title %}Shared pools{% endblock %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'css/sharings.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="sh-page">
+  <div class="container">
+
+    <div class="sh-head">
+      <div>
+        <h1 class="sh-title">Shared pools</h1>
+        <p class="sh-sub">Join a pool to share a resource with other people on campus.</p>
+      </div>
+      {% if user.is_authenticated %}
+      <a class="btn btn-outline" href="{% url 'sharings:shared_requests' %}">
+        <i class="fa-solid fa-inbox" aria-hidden="true"></i> My requests
+      </a>
+      {% endif %}
+    </div>
+
+    {% if pools %}
+    <ul class="sh-grid">
+      {% for pool in pools %}
+      <li class="sh-card">
+        <div class="sh-card-top">
+          <h2 class="sh-card-title">{{ pool.name }}</h2>
+          {% if pool.is_active %}
+            <span class="badge badge-approved">Open</span>
+          {% else %}
+            <span class="badge badge-cancelled">Closed</span>
+          {% endif %}
+        </div>
+
+        <p class="sh-resource">
+          <i class="fa-solid fa-cube" aria-hidden="true"></i> {{ pool.resource.name }}
+        </p>
+
+        {% if pool.description %}
+        <p class="sh-desc">{{ pool.description|truncatewords:24 }}</p>
+        {% endif %}
+
+        <dl class="sh-meta">
+          <div>
+            <dt>Owner</dt>
+            <dd>{{ pool.owner.get_username }}</dd>
+          </div>
+          <div>
+            <dt>Members</dt>
+            <dd>{{ pool.members.count }}{% if pool.max_members %} / {{ pool.max_members }}{% endif %}</dd>
+          </div>
+        </dl>
+
+        <div class="sh-card-actions">
+          {% if not user.is_authenticated %}
+            <a class="btn btn-primary btn-block" href="{% url 'accounts:login' %}?next={{ request.path }}">Log in to request</a>
+          {% elif user == pool.owner %}
+            <span class="sh-note">You own this pool</span>
+          {% elif user in pool.members.all %}
+            <span class="sh-note"><i class="fa-solid fa-check" aria-hidden="true"></i> You are a member</span>
+          {% elif not pool.is_active %}
+            <span class="sh-note">Not accepting requests</span>
+          {% else %}
+            <a class="btn btn-primary btn-block" href="{% url 'sharings:request_create' pool.pk %}">Request to join</a>
+          {% endif %}
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <div class="sh-empty">
+      <i class="fa-solid fa-people-group" aria-hidden="true"></i>
+      <h2>No shared pools yet</h2>
+      <p>Pools will show up here once someone creates one.</p>
+    </div>
+    {% endif %}
+
+  </div>
+</section>
+{% endblock %}

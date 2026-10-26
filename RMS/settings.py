@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'resources',
     'bookings',
     'checkins',
+    'sharings',
 ]
 
 MIDDLEWARE = [
