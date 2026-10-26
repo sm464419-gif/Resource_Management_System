@@ -1,4 +1,5 @@
 #Mymuna
+#Sayon
 """
 Django settings for RMS project.
 
@@ -43,6 +44,7 @@ INSTALLED_APPS = [
     'accounts',
     'resources',
     'bookings',
+    'checkins',
     'sharings',
 ]
 

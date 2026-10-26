@@ -1,0 +1,109 @@
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block title %}Check-in history{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/checkin.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="ck-page">
+  <div class="container">
+
+    <nav class="ck-crumbs" aria-label="Breadcrumb">
+      <a href="/">Home</a>
+      <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+      <a href="#">Bookings</a>
+      <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+      <span>Check-in history</span>
+    </nav>
+
+    <header class="ck-head ck-head-row">
+      <div>
+        <h1>Check-in history</h1>
+        <p>Every booking you've checked in to, arrived late for, or missed.</p>
+      </div>
+      <a class="btn btn-outline" href="#">
+        <i class="fa-solid fa-file-lines" aria-hidden="true"></i> No-show policy
+      </a>
+    </header>
+
+    <!-- Summary -->
+    <ul class="ck-stats" aria-label="Summary">
+      <li class="ck-stat"><strong>{{ stats.total|default:0 }}</strong><span>Total bookings</span></li>
+      <li class="ck-stat ck-stat-ok"><strong>{{ stats.on_time|default:0 }}</strong><span>On time</span></li>
+      <li class="ck-stat ck-stat-warn"><strong>{{ stats.late|default:0 }}</strong><span>Late</span></li>
+      <li class="ck-stat ck-stat-bad"><strong>{{ stats.no_show|default:0 }}</strong><span>No-shows</span></li>
+    </ul>
+
+    <!-- Filters (plain GET links, no JS) -->
+    <nav class="ck-filters" aria-label="Filter by status">
+      <a href="?" class="ck-pill{% if not request.GET.status %} active{% endif %}">All</a>
+      <a href="?status=on_time" class="ck-pill{% if request.GET.status == 'on_time' %} active{% endif %}">On time</a>
+      <a href="?status=late" class="ck-pill{% if request.GET.status == 'late' %} active{% endif %}">Late</a>
+      <a href="?status=no_show" class="ck-pill{% if request.GET.status == 'no_show' %} active{% endif %}">No-show</a>
+    </nav>
+
+    {% if checkins %}
+    <div class="ck-table-wrap">
+      <table class="ck-table">
+        <thead>
+          <tr>
+            <th scope="col">Resource</th>
+            <th scope="col">Booked slot</th>
+            <th scope="col">Checked in</th>
+            <th scope="col">Status</th>
+            <th scope="col"><span class="sr-only">Actions</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in checkins %}
+          <tr>
+            <td data-label="Resource">
+              <strong>{{ c.booking.resource.name }}</strong>
+              <span class="ck-muted">{{ c.booking.resource.location }}</span>
+            </td>
+            <td data-label="Booked slot">
+              {{ c.booking.date|date:"j M Y" }}<br>
+              <span class="ck-muted">{{ c.booking.start_time|time:"g:i A" }} – {{ c.booking.end_time|time:"g:i A" }}</span>
+            </td>
+            <td data-label="Checked in">
+              {% if c.checked_in_at %}{{ c.checked_in_at|time:"g:i A" }}{% else %}<span class="ck-muted">Never</span>{% endif %}
+            </td>
+            <td data-label="Status">
+              <span class="ck-badge ck-badge-{{ c.status }}">{{ c.get_status_display }}</span>
+            </td>
+            <td data-label="">
+              <a class="ck-link" href="#">Details</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if is_paginated %}
+    <nav class="ck-pager" aria-label="Pagination">
+      {% if page_obj.has_previous %}
+        <a class="btn btn-outline" href="?page={{ page_obj.previous_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">Previous</a>
+      {% endif %}
+      <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+      {% if page_obj.has_next %}
+        <a class="btn btn-outline" href="?page={{ page_obj.next_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">Next</a>
+      {% endif %}
+    </nav>
+    {% endif %}
+
+    {% else %}
+    <div class="ck-empty">
+      <span class="ck-icon"><i class="fa-regular fa-calendar-check" aria-hidden="true"></i></span>
+      <h2>No check-ins yet</h2>
+      <p>Once you check in to a booking, it will show up here.</p>
+      <a class="btn btn-primary" href="{% url 'resources:resource_list' %}">Browse resources</a>
+    </div>
+    {% endif %}
+
+  </div>
+</section>
+{% endblock %}
