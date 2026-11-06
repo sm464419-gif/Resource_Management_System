@@ -14,7 +14,7 @@
     <nav class="ck-crumbs" aria-label="Breadcrumb">
       <a href="/">Home</a>
       <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
-      <a href="#">Bookings</a>
+      <a href="{% url 'bookings:booking_list' %}">Bookings</a>
       <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
       <span>Check-in history</span>
     </nav>
@@ -24,7 +24,7 @@
         <h1>Check-in history</h1>
         <p>Every booking you've checked in to, arrived late for, or missed.</p>
       </div>
-      <a class="btn btn-outline" href="#">
+      <a class="btn btn-outline" href="{% url 'checkin:no_show_policy' %}">
         <i class="fa-solid fa-file-lines" aria-hidden="true"></i> No-show policy
       </a>
     </header>
@@ -75,7 +75,7 @@
               <span class="ck-badge ck-badge-{{ c.status }}">{{ c.get_status_display }}</span>
             </td>
             <td data-label="">
-              <a class="ck-link" href="#">Details</a>
+              <a class="ck-link" href="{% url 'bookings:booking_detail' c.booking.id %}">Details</a>
             </td>
           </tr>
           {% endfor %}

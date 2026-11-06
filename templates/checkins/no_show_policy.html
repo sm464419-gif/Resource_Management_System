@@ -14,7 +14,7 @@
     <nav class="ck-crumbs" aria-label="Breadcrumb">
       <a href="/">Home</a>
       <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
-      <a href="#">Bookings</a>
+      <a href="{% url 'bookings:booking_list' %}">Bookings</a>
       <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
       <span>No-show policy</span>
     </nav>
@@ -66,7 +66,7 @@
     <div class="ck-faq">
       <details>
         <summary>I checked in late. Does that count as a no-show?</summary>
-        <p>No. Checking in within 15 minutes after the start time is logged as late. Late check-ins don't lead to restrictions, but they appear in your <a href="#">check-in history</a>.</p>
+        <p>No. Checking in within 15 minutes after the start time is logged as late. Late check-ins don't lead to restrictions, but they appear in your <a href="{% url 'checkin:checkin_history' %}">check-in history</a>.</p>
       </details>
       <details>
         <summary>How do I dispute a no-show?</summary>
@@ -88,8 +88,8 @@
         <p>Check in when you arrive to keep your slot.</p>
       </div>
       <div class="ck-cta-actions">
-        <a class="btn btn-primary" href="#">Check in</a>
-        <a class="btn btn-outline" href="#">View history</a>
+        <a class="btn btn-primary" href="{% url 'checkin:checkin' %}">Check in</a>
+        <a class="btn btn-outline" href="{% url 'checkin:checkin_history' %}">View history</a>
       </div>
     </div>
 

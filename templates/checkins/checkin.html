@@ -14,7 +14,7 @@
     <nav class="ck-crumbs" aria-label="Breadcrumb">
       <a href="/">Home</a>
       <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
-      <a href="#">Bookings</a>
+      <a href="{% url 'bookings:booking_list' %}">Bookings</a>
       <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
       <span>Check in</span>
     </nav>
@@ -78,7 +78,7 @@
               <p>Checked in at {{ booking.checked_in_at|time:"g:i A" }}.</p>
             </div>
           </div>
-          <a class="btn btn-outline btn-block" href="#">View check-in history</a>
+          <a class="btn btn-outline btn-block" href="{% url 'checkin:checkin_history' %}">View check-in history</a>
 
         {% elif window_state == 'early' %}
           <div class="ck-alert ck-alert-info" role="status">
@@ -95,7 +95,7 @@
             <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
             <div>
               <strong>The check-in window has closed.</strong>
-              <p>This booking is marked as a no-show. Read the <a href="#">no-show policy</a> to see what happens next.</p>
+              <p>This booking is marked as a no-show. Read the <a href="{% url 'checkin:no_show_policy' %}">no-show policy</a> to see what happens next.</p>
             </div>
           </div>
           <button class="btn btn-primary btn-lg btn-block" type="button" disabled>Check in</button>
@@ -111,8 +111,9 @@
           </div>
           {% endif %}
 
-          <form method="post" action="#" class="ck-form" novalidate>
+          <form method="post" action="{% url 'checkin:checkin' %}" class="ck-form" novalidate>
             {% csrf_token %}
+            {% if booking.id %}<input type="hidden" name="booking_id" value="{{ booking.id }}">{% endif %}
 
             <div class="ck-field">
               <label for="id_code">Check-in code <span class="ck-muted">(optional)</span></label>
@@ -146,10 +147,16 @@
           </form>
         {% endif %}
 
-        <p class="ck-foot">
-          <a href="#">Can't make it? Cancel booking</a> &middot;
-          <a href="#">No-show policy</a>
-        </p>
+        <div class="ck-foot">
+          {% if booking.id %}
+          <form method="post" action="{% url 'bookings:cancel_booking' booking.id %}" style="display:inline"
+                onsubmit="return confirm('Cancel this booking?');">
+            {% csrf_token %}
+            <button type="submit" class="ck-link" style="background:none;border:0;padding:0;cursor:pointer;font:inherit;color:inherit;text-decoration:underline">Can't make it? Cancel booking</button>
+          </form> &middot;
+          {% endif %}
+          <a href="{% url 'checkin:no_show_policy' %}">No-show policy</a>
+        </div>
       </aside>
 
     </div>

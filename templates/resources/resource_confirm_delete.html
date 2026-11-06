@@ -1,0 +1,37 @@
+ 
+{% extends "core/base.html" %}
+
+{% block title %}Delete Resource | ResourceHub{% endblock %}
+
+{% block content %}
+
+<div style="max-width: 550px; margin: 80px auto; padding: 35px; background: white; border-radius: 15px; box-shadow: 0 5px 25px rgba(0,0,0,0.1); text-align: center;">
+
+    <h2 style="color: #dc3545;">Delete Resource?</h2>
+
+    <p style="margin: 25px 0;">
+        Are you sure you want to delete
+        <strong>{{ resource.name }}</strong>?
+    </p>
+
+    <p style="color: #dc3545;">
+        This action cannot be undone.
+    </p>
+
+    <form method="POST">
+        {% csrf_token %}
+
+        <button type="submit"
+                style="background: #dc3545; color: white; padding: 12px 25px; border: none; border-radius: 8px; cursor: pointer;">
+            Yes, Delete
+        </button>
+
+        <a href="{% url 'resources:resource_detail' resource.pk %}"
+           style="background: #eee; color: #333; padding: 12px 25px; border-radius: 8px; text-decoration: none; margin-left: 10px;">
+            Cancel
+        </a>
+    </form>
+
+</div>
+
+{% endblock %}

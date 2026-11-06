@@ -1,5 +1,6 @@
 import calendar
 from datetime import date, timedelta
+from zoneinfo import ZoneInfo
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -13,18 +14,30 @@ from django.views.decorators.http import require_POST
 from resources.models import Resource
 from .models import Booking, ConflictLog, WaitList
 
-from django.shortcuts import render, get_object_or_404, redirect
-from django.contrib.auth.decorators import login_required
-from django.views.decorators.http import require_POST
-from .models import Booking
+DHAKA_TZ = ZoneInfo('Asia/Dhaka')
+
 
 def staff_required(view):
     return login_required(user_passes_test(lambda u: u.is_staff)(view))
 
 
+def parse_local_datetime(value):
+    """Parse a datetime-local string and treat it as Asia/Dhaka time."""
+    dt = parse_datetime(value or '')
+    if dt and timezone.is_naive(dt):
+        dt = timezone.make_aware(dt, DHAKA_TZ)
+    return dt
+
+
+# ---------------------------------------------------------------------------
+# Bookings
+# ---------------------------------------------------------------------------
+
 @login_required
 def booking_list(request):
-    bookings = Booking.objects.filter(user=request.user)
+    bookings = Booking.objects.filter(
+        user=request.user
+    ).select_related('resource').order_by('-start_time')
     return render(request, 'bookings/booking_list.html', {
         'bookings': bookings
     })
@@ -32,46 +45,76 @@ def booking_list(request):
 
 @login_required
 def booking_detail(request, id):
-    booking = get_object_or_404(
-        Booking, id=id, user=request.user
-    )
+    booking = get_object_or_404(Booking, id=id, user=request.user)
     return render(request, 'bookings/booking_detail.html', {
         'booking': booking
     })
 
 
 @login_required
-def create_booking(request):
-    if request.method == 'POST':
-        Booking.objects.create(
-            user=request.user,
-            resource_id=request.POST.get('resource'),
-            start_time=request.POST.get('start_time'),
-            end_time=request.POST.get('end_time'),
-            purpose=request.POST.get('purpose')
-        )
-        return redirect('bookings:booking_list')
+def create_booking(request, resource_id):
+    resource = get_object_or_404(Resource, id=resource_id)
 
-    return render(request, 'bookings/create_booking.html')
+    if request.method == 'POST':
+        start_time = parse_local_datetime(request.POST.get('start_time'))
+        end_time = parse_local_datetime(request.POST.get('end_time'))
+        purpose = request.POST.get('purpose', '').strip()
+
+        if not start_time or not end_time:
+            messages.error(request, 'Please enter valid booking dates and times.')
+
+        elif start_time <= timezone.now():
+            messages.error(request, 'Please select a future booking time.')
+
+        elif end_time <= start_time:
+            messages.error(request, 'End time must be after start time.')
+
+        elif not purpose:
+            messages.error(request, 'Please enter the booking purpose.')
+
+        elif check_conflict(resource, start_time, end_time).exists():
+            messages.error(request, 'This resource is already booked for that time.')
+
+        else:
+            Booking.objects.create(
+                user=request.user,
+                resource=resource,
+                start_time=start_time,
+                end_time=end_time,
+                purpose=purpose,
+                status='Pending',
+            )
+            messages.success(request, 'Your booking request was submitted successfully!')
+            return redirect('bookings:booking_list')
+
+    return render(request, 'bookings/create_booking.html', {
+        'resource': resource
+    })
 
 
 @login_required
 @require_POST
 def cancel_booking(request, id):
-    booking = get_object_or_404(
-        Booking, id=id, user=request.user
-    )
+    booking = get_object_or_404(Booking, id=id, user=request.user)
     booking.status = 'Cancelled'
     booking.save()
+
+    # The freed slot may be wanted by someone on the waitlist
+    notify_availability(booking)
+
+    messages.success(request, 'Booking cancelled.')
     return redirect('bookings:booking_list')
 
 
-def check_conflict(resource, start_time, end_time, exclude_id=None):
+# ---------------------------------------------------------------------------
+# Conflict helpers
+# ---------------------------------------------------------------------------
 
+def check_conflict(resource, start_time, end_time, exclude_id=None):
     clashes = Booking.objects.filter(
         resource=resource,
-        start_time__lt=end_time,  # starts before the new one ends
-        end_time__gt=start_time,  # ends after the new one starts
+        start_time__lt=end_time,   # starts before the new one ends
+        end_time__gt=start_time,   # ends after the new one starts
     ).exclude(status__in=['Cancelled', 'Rejected'])
 
     if exclude_id:
@@ -80,9 +123,7 @@ def check_conflict(resource, start_time, end_time, exclude_id=None):
 
 
 def suggest_alternative(resource, start_time, end_time):
-
     duration = end_time - start_time
-
 
     later_start = start_time
     for _ in range(48):
@@ -91,7 +132,6 @@ def suggest_alternative(resource, start_time, end_time):
             break
     else:
         later_start = None
-
 
     others = Resource.objects.filter(category=resource.category).exclude(pk=resource.pk)
     free_resources = [
@@ -107,7 +147,7 @@ def suggest_alternative(resource, start_time, end_time):
 
 
 def detect_conflict(booking):
-
+    """Create a ConflictLog for every booking that clashes with `booking`."""
     clashes = check_conflict(
         booking.resource, booking.start_time, booking.end_time,
         exclude_id=booking.id,
@@ -115,18 +155,20 @@ def detect_conflict(booking):
     logs = []
     for other in clashes:
         log, _ = ConflictLog.objects.get_or_create(
-            booking_a=other,  # the existing booking
-            booking_b=booking,  # the new booking
-            defaults={'status': 'Open'},
+            booking=booking,              # the new booking
+            conflicting_booking=other,    # the existing booking
         )
         logs.append(log)
     return logs
 
 
+# ---------------------------------------------------------------------------
+# Calendar / history
+# ---------------------------------------------------------------------------
+
 @login_required
 def booking_calendar(request):
     today = timezone.localdate()
-
 
     try:
         year, month = map(int, request.GET.get('month', '').split('-'))
@@ -138,9 +180,7 @@ def booking_calendar(request):
     prev_month = (first - timedelta(days=1)).strftime('%Y-%m')
     next_month = (first + timedelta(days=32)).replace(day=1).strftime('%Y-%m')
 
-
     grid = calendar.Calendar(firstweekday=6).monthdatescalendar(year, month)
-
 
     bookings = Booking.objects.filter(
         user=request.user,
@@ -152,9 +192,8 @@ def booking_calendar(request):
         day = timezone.localtime(b.start_time).date()
         by_day.setdefault(day, []).append(b)
 
-    weeks = []
-    for week in grid:
-        weeks.append([
+    weeks = [
+        [
             {
                 'date': d,
                 'in_month': d.month == month,
@@ -162,7 +201,9 @@ def booking_calendar(request):
                 'bookings': by_day.get(d, []),
             }
             for d in week
-        ])
+        ]
+        for week in grid
+    ]
 
     return render(request, 'bookings/booking_calendar.html', {
         'weeks': weeks,
@@ -183,15 +224,24 @@ def booking_history(request):
     })
 
 
+# ---------------------------------------------------------------------------
+# Conflicts (staff)
+# ---------------------------------------------------------------------------
+# ConflictLog has no "status" field, so a conflict is Open while
+# `resolution` is blank and Resolved once a resolution is stored.
+
 @staff_required
 def conflict_list(request):
     conflicts = ConflictLog.objects.select_related(
-        'booking_a__resource', 'booking_a__user', 'booking_b__user'
+        'booking__resource', 'booking__user',
+        'conflicting_booking__user',
     ).order_by('-detected_at')
 
     status = request.GET.get('status')
-    if status in ('Open', 'Resolved'):
-        conflicts = conflicts.filter(status=status)
+    if status == 'Open':
+        conflicts = conflicts.filter(resolution='')
+    elif status == 'Resolved':
+        conflicts = conflicts.exclude(resolution='')
 
     return render(request, 'bookings/conflict_list.html', {
         'conflicts': conflicts
@@ -201,10 +251,11 @@ def conflict_list(request):
 @staff_required
 def conflict_detail(request, id):
     conflict = get_object_or_404(ConflictLog, id=id)
+    new_booking = conflict.booking
     alternative = suggest_alternative(
-        conflict.booking_b.resource,
-        conflict.booking_b.start_time,
-        conflict.booking_b.end_time,
+        new_booking.resource,
+        new_booking.start_time,
+        new_booking.end_time,
     )
     return render(request, 'bookings/conflict_detail.html', {
         'conflict': conflict,
@@ -215,15 +266,18 @@ def conflict_detail(request, id):
 @staff_required
 @require_POST
 def resolve_conflict(request, id):
-    conflict = get_object_or_404(ConflictLog, id=id, status='Open')
+    conflict = get_object_or_404(ConflictLog, id=id, resolution='')
     choice = request.POST.get('resolution')
-    a, b = conflict.booking_a, conflict.booking_b
 
-    if choice == 'keep_a':
-        loser = b
-    elif choice in ('keep_b', 'reschedule', 'waitlist'):
+    existing = conflict.conflicting_booking
+    new = conflict.booking
 
-        loser = a if choice == 'keep_b' else b
+    if choice == 'keep_a':          # keep the existing booking
+        loser = new
+    elif choice == 'keep_b':        # keep the new booking
+        loser = existing
+    elif choice in ('reschedule', 'waitlist'):
+        loser = new
     else:
         messages.error(request, 'Please choose a resolution.')
         return redirect('bookings:conflict_detail', id=conflict.id)
@@ -233,12 +287,14 @@ def resolve_conflict(request, id):
 
     if choice == 'waitlist':
         WaitList.objects.get_or_create(
-            user=loser.user, resource=loser.resource,
-            start_time=loser.start_time, end_time=loser.end_time,
-            status='Waiting',
+            user=loser.user,
+            resource=loser.resource,
+            requested_start=loser.start_time,
+            requested_end=loser.end_time,
+            status='waiting',
         )
 
-    if choice == 'reschedule':
+    if choice == 'reschedule' and loser.user.email:
         send_mail(
             'Please reschedule your booking',
             f'Your booking for {loser.resource.name} clashed with another one. '
@@ -246,11 +302,7 @@ def resolve_conflict(request, id):
             None, [loser.user.email], fail_silently=True,
         )
 
-    conflict.status = 'Resolved'
     conflict.resolution = choice
-    conflict.notes = request.POST.get('notes', '')
-    conflict.resolved_by = request.user
-    conflict.resolved_at = timezone.now()
     conflict.save()
 
     # The cancelled slot may now be free for someone on the waitlist
@@ -260,11 +312,15 @@ def resolve_conflict(request, id):
     return redirect('bookings:conflict_list')
 
 
+# ---------------------------------------------------------------------------
+# Waitlist
+# ---------------------------------------------------------------------------
+
 @login_required
 def waitlist_view(request):
     entries = WaitList.objects.filter(
         user=request.user
-    ).select_related('resource').order_by('-created_at')
+    ).select_related('resource').order_by('-id')
 
     return render(request, 'bookings/waitlist.html', {
         'entries': entries,
@@ -276,21 +332,19 @@ def waitlist_view(request):
 @require_POST
 def add_to_waitlist(request):
     resource = get_object_or_404(Resource, pk=request.POST.get('resource'))
-    start = parse_datetime(request.POST.get('start_time', ''))
-    end = parse_datetime(request.POST.get('end_time', ''))
+    start = parse_local_datetime(request.POST.get('start_time'))
+    end = parse_local_datetime(request.POST.get('end_time'))
 
     if not start or not end or end <= start:
         messages.error(request, 'Please enter a valid start and end time.')
         return redirect('bookings:waitlist')
 
-    if timezone.is_naive(start):
-        start = timezone.make_aware(start)
-    if timezone.is_naive(end):
-        end = timezone.make_aware(end)
-
     _, created = WaitList.objects.get_or_create(
-        user=request.user, resource=resource,
-        start_time=start, end_time=end, status='Waiting',
+        user=request.user,
+        resource=resource,
+        requested_start=start,
+        requested_end=end,
+        status='waiting',
     )
     if created:
         messages.success(request, 'You have joined the waitlist.')
@@ -303,7 +357,7 @@ def add_to_waitlist(request):
 @require_POST
 def leave_waitlist(request, id):
     entry = get_object_or_404(WaitList, id=id, user=request.user)
-    entry.status = 'Cancelled'
+    entry.status = 'cancelled'
     entry.save()
     messages.success(request, 'You have left the waitlist.')
     return redirect('bookings:waitlist')
@@ -316,22 +370,26 @@ def notify_availability(booking):
     """
     waiting = WaitList.objects.filter(
         resource=booking.resource,
-        status='Waiting',
-        start_time__lt=booking.end_time,
-        end_time__gt=booking.start_time,
-    ).order_by('created_at')  # first come, first served
+        status='waiting',
+        requested_start__lt=booking.end_time,
+        requested_end__gt=booking.start_time,
+    ).select_related('user', 'resource').order_by('id')  # first come, first served
 
     for entry in waiting:
-        if check_conflict(entry.resource, entry.start_time, entry.end_time).exists():
+        if check_conflict(entry.resource, entry.requested_start, entry.requested_end).exists():
             continue  # still taken, try the next person
 
-        entry.status = 'Notified'
+        entry.status = 'notified'
+        entry.notified = True
         entry.save()
-        send_mail(
-            'A slot is available',
-            f'{entry.resource.name} is now free on '
-            f'{entry.start_time:%d %b %Y, %H:%M}. Book it before someone else does!',
-            None, [entry.user.email], fail_silently=True,
-        )
-        return entry  # only the next person is alerted
+
+        if entry.user.email:
+            local_start = timezone.localtime(entry.requested_start, DHAKA_TZ)
+            send_mail(
+                'A slot is available',
+                f'{entry.resource.name} is now free on '
+                f'{local_start:%d %b %Y, %H:%M}. Book it before someone else does!',
+                None, [entry.user.email], fail_silently=True,
+            )
+        return entry
     return None

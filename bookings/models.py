@@ -3,8 +3,8 @@ from django.conf import settings
 
 
 class Booking(models.Model):
-    user = models.ForeignKey('accounts.User', on_delete=models.CASCADE)
-    resource = models.ForeignKey('resources.Resource', on_delete=models.CASCADE)
+    user = models.ForeignKey('accounts.User', on_delete=models.CASCADE, related_name='bookings')
+    resource = models.ForeignKey('resources.Resource', on_delete=models.CASCADE, related_name='bookings')
     start_time = models.DateTimeField()
     end_time = models.DateTimeField()
     purpose = models.TextField()

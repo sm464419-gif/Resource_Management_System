@@ -1,0 +1,34 @@
+ 
+{% extends 'core/base.html' %}
+
+{% block title %}Book Resource | ResourceHub{% endblock %}
+
+{% block content %}
+<div class="booking-container">
+    <h1>Book This Resource</h1>
+
+    <div class="resource-info">
+        <h2>{{ resource.name }}</h2>
+        <p>{{ resource.location }}</p>
+    </div>
+
+    <form method="POST">
+        {% csrf_token %}
+
+        <label>Start Date and Time</label>
+        <input type="datetime-local" name="start_time" required>
+
+        <label>End Date and Time</label>
+        <input type="datetime-local" name="end_time" required>
+
+        <label>Purpose</label>
+        <textarea name="purpose" rows="4" required></textarea>
+
+        <button type="submit">Submit Booking Request</button>
+    </form>
+
+    <a href="{% url 'resources:resource_list' %}">
+        Back to Resources
+    </a>
+</div>
+{% endblock %}

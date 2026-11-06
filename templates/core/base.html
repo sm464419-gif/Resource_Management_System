@@ -18,6 +18,11 @@
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
 
+  {# URLs that may not exist yet. "as" stores an empty string instead of crashing the whole site. #}
+  {% url 'sharings:shared_with_me' as shared_url %}
+  {% url 'analytics:dashboard' as analytics_url %}
+  {% url 'core:about' as about_url %}
+
   {% with app=request.resolver_match.app_name page=request.resolver_match.url_name %}
   <header class="site-header" id="siteHeader">
 
@@ -42,6 +47,7 @@
           <ul class="nav-list">
             <li><a class="nav-link{% if page == 'home' %} active{% endif %}" href="/">Home</a></li>
 
+            <!-- Resources dropdown -->
             <li>
               <details class="has-dropdown">
                 <summary class="nav-link{% if app == 'resources' %} active{% endif %}">
@@ -56,10 +62,33 @@
               </details>
             </li>
 
-            <li><a class="nav-link{% if app == 'bookings' %} active{% endif %}" href="#">Bookings</a></li>
+            <!-- Bookings dropdown (logged-in users) -->
+            {% if user.is_authenticated %}
+            <li>
+              <details class="has-dropdown">
+                <summary class="nav-link{% if app == 'bookings' or app == 'checkin' or app == 'sharings' %} active{% endif %}">
+                  Bookings <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+                </summary>
+                <ul class="dropdown">
+                  <li><a href="{% url 'bookings:booking_list' %}">My bookings</a></li>
+                  <li><a href="{% url 'bookings:booking_calendar' %}">Calendar</a></li>
+                  <li><a href="{% url 'bookings:booking_history' %}">History</a></li>
+                  <li><a href="{% url 'bookings:waitlist' %}">Waitlist</a></li>
+                  <li><a href="{% url 'checkin:checkin' %}">Check-in</a></li>
+                  <li><a href="{{ shared_url|default:'/' }}">Shared with me</a></li>
+                  {% if user.is_staff %}
+                  <li><a href="{% url 'bookings:conflict_list' %}">Conflicts</a></li>
+                  {% endif %}
+                </ul>
+              </details>
+            </li>
+            {% else %}
+            <li><a class="nav-link{% if app == 'bookings' %} active{% endif %}" href="{% url 'bookings:booking_list' %}">Bookings</a></li>
+            {% endif %}
+
             {# Wrap Analytics in {% if user.is_staff %} once role-based access is in place #}
-            <li><a class="nav-link{% if app == 'analytics' %} active{% endif %}" href="#">Analytics</a></li>
-            <li><a class="nav-link{% if page == 'about' %} active{% endif %}" href="#">About</a></li>
+            <li><a class="nav-link{% if app == 'analytics' %} active{% endif %}" href="{{ analytics_url|default:'/' }}">Analytics</a></li>
+            <li><a class="nav-link{% if page == 'about' %} active{% endif %}" href="{{ about_url|default:'/' }}">About</a></li>
           </ul>
         </nav>
 
@@ -67,6 +96,7 @@
           <label for="searchToggle" class="icon-btn" title="Search resources">
             <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
           </label>
+
 
           {% if user.is_authenticated %}
             <a class="btn btn-outline" href="{% url 'accounts:profile' %}">Dashboard</a>
@@ -92,7 +122,7 @@
     </div>
 
     <div class="search-bar">
-      <form class="container search-form" method="get" action="#" role="search">
+      <form class="container search-form" method="get" action="{% url 'resources:resource_list' %}" role="search">
         <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
         <input type="search" name="q" placeholder="Search rooms, labs, equipment…" aria-label="Search resources">
         <button type="submit" class="btn btn-primary">Search</button>
@@ -130,17 +160,17 @@
 
       <nav class="footer-nav" aria-label="Footer navigation">
         <a href="/">Home</a>
-        <a href="#">Resources</a>
-        <a href="#">Bookings</a>
-        <a href="#">Analytics</a>
-        <a href="#">About</a>
+        <a href="{% url 'resources:resource_list' %}">Resources</a>
+        <a href="{% url 'bookings:booking_list' %}">Bookings</a>
+        <a href="{{ analytics_url|default:'/' }}">Analytics</a>
+        <a href="{{ about_url|default:'/' }}">About</a>
       </nav>
 
       <ul class="social">
-        <li><a href="#" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a></li>
-        <li><a href="#" aria-label="LinkedIn"><i class="fa-brands fa-linkedin-in"></i></a></li>
-        <li><a href="#" aria-label="GitHub"><i class="fa-brands fa-github"></i></a></li>
-        <li><a href="#" aria-label="YouTube"><i class="fa-brands fa-youtube"></i></a></li>
+        <li><a href="https://www.facebook.com/" target="_blank" rel="noopener noreferrer" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a></li>
+        <li><a href="https://www.linkedin.com/" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn"><i class="fa-brands fa-linkedin-in"></i></a></li>
+        <li><a href="https://github.com/" target="_blank" rel="noopener noreferrer" aria-label="GitHub"><i class="fa-brands fa-github"></i></a></li>
+        <li><a href="https://www.youtube.com/" target="_blank" rel="noopener noreferrer" aria-label="YouTube"><i class="fa-brands fa-youtube"></i></a></li>
       </ul>
     </div>
 
@@ -151,9 +181,24 @@
   </footer>
 
   <script>
-    const h = document.getElementById('siteHeader'), close = () => { h.querySelectorAll('input').forEach(c => c.checked = false); h.querySelector('details').open = false; };
-    document.addEventListener('click', e => { if (!h.contains(e.target)) close(); });
-    document.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
+    (() => {
+      const header = document.getElementById('siteHeader');
+      const dropdowns = header.querySelectorAll('details');
+
+      // Close the mobile menu, the search bar and every dropdown
+      const closeMenus = () => {
+        header.querySelectorAll('input').forEach(c => c.checked = false);
+        dropdowns.forEach(d => d.open = false);
+      };
+
+      // Opening one dropdown closes the others
+      dropdowns.forEach(d => d.addEventListener('toggle', () => {
+        if (d.open) dropdowns.forEach(o => { if (o !== d) o.open = false; });
+      }));
+
+      document.addEventListener('click', e => { if (!header.contains(e.target)) closeMenus(); });
+      document.addEventListener('keydown', e => { if (e.key === 'Escape') closeMenus(); });
+    })();
   </script>
   {% block extra_js %}{% endblock %}
 </body>
