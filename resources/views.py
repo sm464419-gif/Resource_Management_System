@@ -104,7 +104,7 @@ def resource_delete(request, pk):
 def category_list(request):
     categories = ResourceCategory.objects.all()
 
-    return render(request, "resources/category_list.html", {
+    return render(request, "resources/category_management.html", {
         "categories": categories,
     })
 
@@ -116,7 +116,7 @@ def category_create(request):
 
         if form.is_valid():
             form.save()
-            return redirect("resources:category_list")
+            return redirect("resources:category_management")
     else:
         form = ResourceCategoryForm()
 

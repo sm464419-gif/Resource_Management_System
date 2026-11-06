@@ -12,7 +12,7 @@
     </div>
     {% if user.is_staff %}
     <div class="head-actions">
-      <a class="btn btn-outline" href="{% url 'resources:category_management' %}"><i class="fa-solid fa-tags" aria-hidden="true"></i> Categories</a>
+      <a class="btn btn-outline" href="{% url 'resources:category_list' %}"><i class="fa-solid fa-tags" aria-hidden="true"></i> Categories</a>
       <a class="btn btn-primary" href="{% url 'resources:resource_create' %}"><i class="fa-solid fa-plus" aria-hidden="true"></i> Add resource</a>
     </div>
     {% endif %}
