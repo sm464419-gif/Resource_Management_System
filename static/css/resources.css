@@ -178,3 +178,36 @@
   .data-table td[data-label]::before { content: attr(data-label); font-size: .78rem; color: var(--muted); }
   .row-actions { justify-content: flex-end; }
 }
+.resource-qr-section {
+    margin-top: 30px;
+    padding: 24px;
+    background: #f5eeff;
+    border-radius: 14px;
+    text-align: center;
+}
+
+.resource-qr-section p {
+    color: #666;
+    margin-bottom: 18px;
+}
+
+.qr-image {
+    display: flex;
+    justify-content: center;
+    margin: 20px 0;
+}
+
+.qr-image img {
+    width: 220px;
+    height: 220px;
+    padding: 10px;
+    background: white;
+    border-radius: 12px;
+    border: 1px solid #e0c0ff;
+}
+
+.resource-qr-section .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}

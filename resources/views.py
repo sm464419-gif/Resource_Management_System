@@ -8,6 +8,11 @@ from django.views.decorators.http import require_POST
 from .models import Resource, ResourceCategory
 from .forms import ResourceForm, ResourceCategoryForm
 from bookings.models import Booking
+import qrcode
+import base64
+
+from io import BytesIO
+from django.urls import reverse
 
 
 # ==========================================
@@ -57,8 +62,24 @@ def resource_list(request):
 def resource_detail(request, pk):
     resource = get_object_or_404(Resource, pk=pk)
 
+    # Create the resource URL with its unique QR token
+    resource_url = request.build_absolute_uri(
+        reverse('resources:resource_detail', kwargs={'pk': resource.pk})
+    ) + f'?qr={resource.qr_code}'
+
+    # Generate QR image
+    qr = qrcode.make(resource_url)
+
+    buffer = BytesIO()
+    qr.save(buffer, format='PNG')
+
+    qr_image = base64.b64encode(
+        buffer.getvalue()
+    ).decode('utf-8')
+
     return render(request, "resources/resource_detail.html", {
         "resource": resource,
+        "qr_image": qr_image,
     })
 
 

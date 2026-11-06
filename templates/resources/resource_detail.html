@@ -32,9 +32,37 @@
         <div><dt>Location</dt><dd>{{ resource.location }}</dd></div>
         <div><dt>Capacity</dt><dd>{{ resource.capacity }} people</dd></div>
         <div><dt>Opening hours</dt><dd>{{ resource.open_time|time:"H:i" }} – {{ resource.close_time|time:"H:i" }}</dd></div>
-        <div><dt>QR code</dt><dd>{{ resource.qr_code }}</dd></div>
+
         <div><dt>Device code</dt><dd>{{ resource.device_code }}</dd></div>
       </dl>
+        <div class="resource-qr-section">
+    <h2 class="panel-title">Resource QR Code</h2>
+
+    <p>
+        Scan this QR code to open the details of
+        <strong>{{ resource.name }}</strong>.
+    </p>
+
+    <div class="qr-image">
+        <img
+            src="data:image/png;base64,{{ qr_image }}"
+            alt="QR code for {{ resource.name }}"
+            width="220"
+            height="220"
+        >
+    </div>
+
+    {% if user.is_staff %}
+        <a
+            class="btn btn-outline"
+            href="data:image/png;base64,{{ qr_image }}"
+            download="resource_{{ resource.id }}_qr.png"
+        >
+            <i class="fa-solid fa-download"></i>
+            Download QR Code
+        </a>
+    {% endif %}
+</div>
     </div>
 
     <aside class="panel side-panel">
