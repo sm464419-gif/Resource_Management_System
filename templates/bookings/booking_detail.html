@@ -45,10 +45,17 @@
       <a class="btn btn-outline btn-block" href="{% url 'bookings:create_booking' booking.resource.pk %}">
     <i class="fa-solid fa-rotate-right" aria-hidden="true"></i> Book again
 </a>
-      {% if booking.status != 'Cancelled' %}
-      <hr>
-      <a class="btn btn-danger btn-block" href="{% url 'bookings:cancel_booking' booking.id %}"><i class="fa-solid fa-ban" aria-hidden="true"></i> Cancel booking</a>
-      {% endif %}
+     {% if booking.status != 'Cancelled' %}
+    <form method="POST"
+          action="{% url 'bookings:cancel_booking' booking.id %}">
+        {% csrf_token %}
+
+        <button type="submit" class="btn btn-danger btn-block">
+            <i class="fa-solid fa-ban"></i>
+            Cancel booking
+        </button>
+    </form>
+{% endif %}
       <a class="btn btn-outline btn-block" href="{% url 'bookings:booking_list' %}"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Back to bookings</a>
     </aside>
   </div>

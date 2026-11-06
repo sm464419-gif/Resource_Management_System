@@ -93,18 +93,26 @@ def create_booking(request, resource_id):
 
 
 @login_required
-@require_POST
-def cancel_booking(request, id):
-    booking = get_object_or_404(Booking, id=id, user=request.user)
-    booking.status = 'Cancelled'
-    booking.save()
 
-    # The freed slot may be wanted by someone on the waitlist
+
+def cancel_booking(request, id):
+    booking = get_object_or_404(
+        Booking,
+        id=id,
+        user=request.user
+    )
+
+    if booking.status == 'Cancelled':
+        messages.warning(request, 'This booking is already cancelled.')
+        return redirect('bookings:booking_list')
+
+    booking.status = 'Cancelled'
+    booking.save(update_fields=['status'])
+
     notify_availability(booking)
 
-    messages.success(request, 'Booking cancelled.')
+    messages.success(request, 'Booking cancelled successfully!')
     return redirect('bookings:booking_list')
-
 
 # ---------------------------------------------------------------------------
 # Conflict helpers
@@ -326,6 +334,7 @@ def waitlist_view(request):
         'entries': entries,
         'resources': Resource.objects.all(),
     })
+
 
 
 @login_required
