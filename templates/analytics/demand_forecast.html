@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Demand forecast{% endblock %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'css/analytics.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="an-page">
+  <div class="container">
+
+    <div class="an-head">
+      <div>
+        <h1 class="an-title">Demand forecast</h1>
+        <p class="an-sub">Predicted demand for each resource, based on past bookings.</p>
+      </div>
+      {% if user.is_staff %}
+      <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-primary">
+          <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i> Generate forecast
+        </button>
+      </form>
+      {% endif %}
+    </div>
+
+    <nav class="an-tabs" aria-label="Analytics sections">
+      <a href="{% url 'analytics:analytics_dashboard' %}" class="an-tab">Dashboard</a>
+      <a href="{% url 'analytics:utilization_report' %}" class="an-tab">Utilization</a>
+      <a href="{% url 'analytics:demand_forecast' %}" class="an-tab active" aria-current="page">Demand forecast</a>
+      <a href="{% url 'analytics:report_export' %}" class="an-tab">Export</a>
+    </nav>
+
+    {% if forecasts %}
+    <ul class="an-forecasts">
+      {% for f in forecasts %}
+      {% widthratio f.confidence_score 1 100 as conf %}
+      <li class="an-forecast">
+        <h2 class="an-forecast-title">{{ f.resource.name }}</h2>
+        <p class="an-forecast-period">{{ f.forecast_period }}</p>
+        <p class="an-forecast-value">{{ f.predicted_demand }}</p>
+        <p class="an-card-label">predicted bookings</p>
+
+        <div class="an-confidence">
+          <div class="an-confidence-top">
+            <span>Confidence</span>
+            <strong>{{ conf }}%</strong>
+          </div>
+          <span class="an-bar-track"><span class="an-bar-fill" style="width: {{ conf }}%"></span></span>
+        </div>
+
+        <p class="an-note">Generated {{ f.generated_at|date:"d M Y, H:i" }}</p>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <div class="an-empty">
+      <i class="fa-solid fa-chart-line" aria-hidden="true"></i>
+      <h2>No forecasts yet</h2>
+      <p>{% if user.is_staff %}Use the Generate forecast button to create the first one.{% else %}Forecasts will appear here once they are generated.{% endif %}</p>
+    </div>
+    {% endif %}
+
+  </div>
+</section>
+{% endblock %}

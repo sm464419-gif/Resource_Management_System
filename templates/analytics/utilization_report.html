@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Utilization report{% endblock %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'css/analytics.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="an-page">
+  <div class="container">
+
+    <div class="an-head">
+      <div>
+        <h1 class="an-title">Utilization report</h1>
+        <p class="an-sub">Utilization, peak hours and department usage for a period.</p>
+      </div>
+    </div>
+
+    <nav class="an-tabs" aria-label="Analytics sections">
+      <a href="{% url 'analytics:analytics_dashboard' %}" class="an-tab">Dashboard</a>
+      <a href="{% url 'analytics:utilization_report' %}" class="an-tab active" aria-current="page">Utilization</a>
+      <a href="{% url 'analytics:demand_forecast' %}" class="an-tab">Demand forecast</a>
+      <a href="{% url 'analytics:report_export' %}" class="an-tab">Export</a>
+    </nav>
+
+    <form method="get" class="an-filter">
+      <div class="an-field">
+        <label for="start">From</label>
+        <input type="date" id="start" name="start" value="{{ start }}">
+      </div>
+      <div class="an-field">
+        <label for="end">To</label>
+        <input type="date" id="end" name="end" value="{{ end }}">
+      </div>
+      <div class="an-field">
+        <label for="department">Department</label>
+        <select id="department" name="department">
+          <option value="">All departments</option>
+          {% for d in departments %}
+          <option value="{{ d }}"{% if d == selected_department %} selected{% endif %}>{{ d }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <button type="submit" class="btn btn-primary">Apply</button>
+    </form>
+
+    <div class="an-cards">
+      <div class="an-card">
+        <span class="an-card-icon"><i class="fa-solid fa-calendar-check" aria-hidden="true"></i></span>
+        <div>
+          <p class="an-card-label">Total bookings</p>
+          <p class="an-card-value">{{ total_bookings|default:0 }}</p>
+        </div>
+      </div>
+      <div class="an-card">
+        <span class="an-card-icon"><i class="fa-solid fa-gauge-high" aria-hidden="true"></i></span>
+        <div>
+          <p class="an-card-label">Average utilization</p>
+          <p class="an-card-value">{{ avg_utilization|default:0|floatformat:1 }}%</p>
+        </div>
+      </div>
+      <div class="an-card">
+        <span class="an-card-icon"><i class="fa-solid fa-user-slash" aria-hidden="true"></i></span>
+        <div>
+          <p class="an-card-label">No-shows</p>
+          <p class="an-card-value">{{ total_no_shows|default:0 }}</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="an-panel">
+      <h2 class="an-panel-title">Department usage</h2>
+      {% if department_stats %}
+      <ul class="an-bars">
+        {% for d in department_stats %}
+        <li class="an-bar-row">
+          <span class="an-bar-label" title="{{ d.department }}">{{ d.department }}</span>
+          <span class="an-bar-track"><span class="an-bar-fill" style="width: {{ d.avg_utilization|stringformat:'.0f' }}%"></span></span>
+          <span class="an-bar-value">{{ d.avg_utilization|floatformat:1 }}%</span>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="an-muted">No department data for this period.</p>
+      {% endif %}
+    </div>
+
+    {% if reports %}
+    <div class="an-table-wrap">
+      <table class="an-table">
+        <thead>
+          <tr>
+            <th scope="col">Resource</th>
+            <th scope="col">Department</th>
+            <th scope="col">Period</th>
+            <th scope="col">Bookings</th>
+            <th scope="col">No-shows</th>
+            <th scope="col">Utilization</th>
+            <th scope="col">Peak hour</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in reports %}
+          <tr>
+            <td data-label="Resource"><strong>{{ r.resource.name }}</strong></td>
+            <td data-label="Department">{{ r.department }}</td>
+            <td data-label="Period">{{ r.period_start|date:"d M" }} to {{ r.period_end|date:"d M Y" }}</td>
+            <td data-label="Bookings">{{ r.total_bookings }}</td>
+            <td data-label="No-shows">{{ r.total_no_status }}</td>
+            <td data-label="Utilization">
+              <span class="an-meter">
+                <span class="an-bar-track"><span class="an-bar-fill" style="width: {{ r.utilization_percent|stringformat:'.0f' }}%"></span></span>
+                {{ r.utilization_percent|floatformat:1 }}%
+              </span>
+            </td>
+            <td data-label="Peak hour">{{ r.peak_hour|stringformat:"02d" }}:00</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="an-empty">
+      <i class="fa-solid fa-chart-column" aria-hidden="true"></i>
+      <h2>No reports for this period</h2>
+      <p>Try a different date range or department.</p>
+    </div>
+    {% endif %}
+
+  </div>
+</section>
+{% endblock %}
