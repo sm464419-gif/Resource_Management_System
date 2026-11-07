@@ -43,11 +43,11 @@ def register_view(request):
         if form.is_valid():
             user = form.save(commit=False)
 
-            # Email verification is not required for registration.
+
             user.email_verified = True
             user.save()
 
-            # Create the user's profile.
+
             Profile.objects.get_or_create(user=user)
 
             messages.success(

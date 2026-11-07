@@ -37,8 +37,7 @@ class User(AbstractUser):
         blank=True,
     )
 
-    # Kept temporarily for compatibility.
-    # Email verification is no longer required for registration.
+
     email_verified = models.BooleanField(default=False)
 
     def __str__(self):
