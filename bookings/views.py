@@ -15,6 +15,7 @@ from django.views.decorators.http import require_POST
 
 from resources.models import Resource
 from .models import Booking, ConflictLog, WaitList
+from notifications.services import send_notification
 
 DHAKA_TZ = ZoneInfo('Asia/Dhaka')
 
@@ -138,11 +139,19 @@ def cancel_booking(request, id):
     booking.status = 'Cancelled'
     booking.save(update_fields=['status'])
 
+    # Notify the user
+    send_notification(
+        user=booking.user,
+        notification_type='booking_cancelled',
+        message=f'Your booking for {booking.resource.name} '
+                f'has been cancelled successfully.'
+    )
+
+    # Notify the next eligible waitlisted user
     notify_availability(booking)
 
     messages.success(request, 'Booking cancelled successfully!')
     return redirect('bookings:booking_list')
-
 
 # ---------------------------------------------------------------------------
 # Conflict helpers
@@ -423,57 +432,118 @@ def leave_waitlist(request, id):
 
 def notify_availability(booking):
     """
-    Call this after a booking is cancelled.
-    Finds the first waiting user whose slot is now free and emails them.
+    Find the first eligible user in the waitlist
+    and send an in-app notification and email.
     """
+
     waiting = WaitList.objects.filter(
         resource=booking.resource,
         status='waiting',
         requested_start__lt=booking.end_time,
         requested_end__gt=booking.start_time,
-    ).select_related('user', 'resource').order_by('id')  # first come, first served
+    ).select_related(
+        'user', 'resource'
+    ).order_by('id')
 
     for entry in waiting:
-        if check_conflict(entry.resource, entry.requested_start, entry.requested_end).exists():
-            continue  # still taken, try the next person
+
+        # Check whether the requested slot is actually free
+        if check_conflict(
+            entry.resource,
+            entry.requested_start,
+            entry.requested_end
+        ).exists():
+            continue
 
         entry.status = 'notified'
         entry.notified = True
-        entry.save()
+        entry.save(update_fields=['status', 'notified'])
 
-        if entry.user.email:
-            local_start = timezone.localtime(entry.requested_start, DHAKA_TZ)
-            send_mail(
-                'A slot is available',
-                f'{entry.resource.name} is now free on '
-                f'{local_start:%d %b %Y, %H:%M}. Book it before someone else does!',
-                None, [entry.user.email], fail_silently=True,
-            )
+        local_start = timezone.localtime(
+            entry.requested_start,
+            DHAKA_TZ
+        )
+
+        message = (
+            f'{entry.resource.name} is now available on '
+            f'{local_start:%d %b %Y, %H:%M}. '
+            'Please visit ResourceHub to request this booking.'
+        )
+
+        # Connect with Notifications app
+        send_notification(
+            user=entry.user,
+            notification_type='slot_available',
+            message=message
+        )
+
+        # Notify only the first eligible user
         return entry
+
     return None
 
 
-# ---------------------------------------------------------------------------
-# Approve / reject bookings (staff)
+
+
 # ---------------------------------------------------------------------------
 
 def _set_status(request, id, status):
-    booking = get_object_or_404(Booking, id=id, status='Pending')
 
-    # Don't approve a booking that overlaps one that is already approved
+    booking = get_object_or_404(
+        Booking,
+        id=id,
+        status='Pending'
+    )
+
+    # Check approved booking conflicts
     if status == 'Approved' and check_conflict(
-        booking.resource, booking.start_time, booking.end_time,
+        booking.resource,
+        booking.start_time,
+        booking.end_time,
         exclude_id=booking.id,
     ).filter(status='Approved').exists():
-        messages.error(request, f'Booking #{booking.id} overlaps an approved booking.')
+
+        messages.error(
+            request,
+            f'Booking #{booking.id} overlaps an approved booking.'
+        )
+
         return redirect('bookings:pending_bookings')
 
     booking.status = status
-    booking.save()                       # the signal emails the user
-    if status == 'Rejected':
-        notify_availability(booking)     # free the slot for the waitlist
+    booking.save(update_fields=['status'])
 
-    messages.success(request, f'Booking #{booking.id} {status.lower()}.')
+    # Send notification
+    if status == 'Approved':
+
+        send_notification(
+            user=booking.user,
+            notification_type='booking_approved',
+            message=(
+                f'Your booking for {booking.resource.name} '
+                'has been approved.'
+            )
+        )
+
+    elif status == 'Rejected':
+
+        send_notification(
+            user=booking.user,
+            notification_type='booking_rejected',
+            message=(
+                f'Your booking for {booking.resource.name} '
+                'has been rejected.'
+            )
+        )
+
+        # Check waitlist for the released slot
+        notify_availability(booking)
+
+    messages.success(
+        request,
+        f'Booking #{booking.id} {status.lower()}.'
+    )
+
     return redirect('bookings:pending_bookings')
 
 
