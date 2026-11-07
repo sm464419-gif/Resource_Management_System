@@ -1,0 +1,66 @@
+/* ==========================================================
+   ResourceHub - notifications.css
+   Simple styles for the notifications page.
+   Colors and fonts come from master.css (var(--brand) etc.)
+   ========================================================== */
+
+/* ---------- Page layout ---------- */
+.section { padding-block: 40px 72px; }
+.narrow  { max-width: 760px; }
+
+.page-head { background: var(--lavender); border-bottom: 1px solid var(--line); padding-block: 36px; }
+.page-head h1 { font-size: 2rem; color: var(--brand-deep); }
+.page-head p  { margin-top: 6px; color: var(--muted); }
+.page-head-inner {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 20px; flex-wrap: wrap;
+}
+
+/* ---------- Small button ---------- */
+.btn-sm { padding: 6px 14px; font-size: .8rem; }
+
+/* ---------- Notification list ---------- */
+.notify-list { display: grid; gap: 12px; }
+
+.notify-item {
+  display: flex; align-items: center; gap: 16px;
+  padding: 16px 20px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+/* Unread = purple left border + light purple background */
+.notify-item.unread {
+  background: var(--brand-soft);
+  border-left: 5px solid var(--brand);
+}
+
+.notify-icon {
+  display: grid; place-items: center;
+  width: 44px; height: 44px; flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--brand-soft); color: var(--brand);
+}
+.notify-item.unread .notify-icon { background: var(--brand); color: #fff; }
+
+.notify-body { flex: 1; }
+.notify-message { font-weight: 500; }
+.notify-time { color: var(--muted); font-size: .8rem; }
+
+/* ---------- Empty state ---------- */
+.empty-state {
+  text-align: center; padding: 60px 20px;
+  background: var(--lavender);
+  border: 1.5px dashed var(--line);
+  border-radius: var(--radius);
+}
+.empty-state i  { font-size: 2.4rem; color: var(--brand-light); }
+.empty-state h2 { margin-top: 10px; color: var(--brand-deep); font-size: 1.2rem; }
+.empty-state p  { color: var(--muted); }
+
+/* ---------- Mobile ---------- */
+@media (max-width: 560px) {
+  .notify-item { flex-wrap: wrap; }
+  .notify-body { flex-basis: calc(100% - 60px); }
+}

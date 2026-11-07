@@ -1,10 +1,60 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Title</title>
-</head>
-<body>
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Notifications{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/notifications.css' %}">{% endblock %}
 
-</body>
-</html>
+{% block content %}
+<section class="page-head">
+  <div class="container page-head-inner">
+    <div>
+      <h1>Notifications</h1>
+      <p>Your booking approvals and slot availability alerts.</p>
+    </div>
+
+    <!-- Mark ALL notifications as read -->
+    {% if notifications %}
+    <form method="post" action="{% url 'notifications:mark_all_as_read' %}">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-outline">Mark all as read</button>
+    </form>
+    {% endif %}
+  </div>
+</section>
+
+<section class="section">
+  <div class="container narrow">
+
+    {% if notifications %}
+    <ul class="notify-list">
+      {% for n in notifications %}
+      <!-- "unread" class gives the highlighted look -->
+      <li class="notify-item{% if not n.is_read %} unread{% endif %}">
+        <div class="notify-icon"><i class="fa-regular fa-bell" aria-hidden="true"></i></div>
+
+        <div class="notify-body">
+          <p class="notify-message">{{ n.message }}</p>
+          <small class="notify-time">{{ n.created_at|timesince }} ago</small>
+        </div>
+
+        <!-- Mark ONE notification as read -->
+        {% if not n.is_read %}
+        <form method="post" action="{% url 'notifications:mark_as_read' n.id %}">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-outline btn-sm">Mark as read</button>
+        </form>
+        {% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+
+    {% else %}
+    <div class="empty-state">
+      <i class="fa-regular fa-bell-slash" aria-hidden="true"></i>
+      <h2>No notifications</h2>
+      <p>You're all caught up.</p>
+    </div>
+    {% endif %}
+
+  </div>
+</section>
+{% endblock %}
