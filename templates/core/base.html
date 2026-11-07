@@ -18,9 +18,9 @@
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
 
-  {# URLs that may not exist yet. "as" stores an empty string instead of crashing the whole site. #}
-  {% url 'sharings:shared_with_me' as shared_url %}
-  {% url 'analytics:dashboard' as analytics_url %}
+  {# "as" stores an empty string instead of crashing the whole site if a route is missing. #}
+  {# Analytics has no app_name, so its route is the plain name 'analytics_dashboard'. #}
+  {% url 'analytics_dashboard' as analytics_url %}
   {% url 'core:about' as about_url %}
 
   {% with app=request.resolver_match.app_name page=request.resolver_match.url_name %}
@@ -66,7 +66,7 @@
             {% if user.is_authenticated %}
             <li>
               <details class="has-dropdown">
-                <summary class="nav-link{% if app == 'bookings' or app == 'checkin' or app == 'sharings' %} active{% endif %}">
+                <summary class="nav-link{% if app == 'bookings' or app == 'checkins' or app == 'sharings' %} active{% endif %}">
                   Bookings <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
                 </summary>
                 <ul class="dropdown">
@@ -74,11 +74,12 @@
                   <li><a href="{% url 'bookings:booking_calendar' %}">Calendar</a></li>
                   <li><a href="{% url 'bookings:booking_history' %}">History</a></li>
                   <li><a href="{% url 'bookings:waitlist' %}">Waitlist</a></li>
-                  <li><a href="{% url 'checkins:checkins' %}">Check-in</a></li>
-                  <li><a href="{{ shared_url|default:'/' }}">Shared with me</a></li>
+                  <li><a href="{% url 'checkins:checkin_history' %}">Check-in history</a></li>
+                  <li><a href="{% url 'sharings:shared_pool' %}">Shared pool</a></li>
+                  <li><a href="{% url 'sharings:shared_requests' %}">Sharing requests</a></li>
                   {% if user.is_staff %}
                   <li><a href="{% url 'bookings:conflict_list' %}">Conflicts</a></li>
-                    <li><a href="{% url 'bookings:pending_bookings' %}">Review pending</a></li>
+                  <li><a href="{% url 'bookings:pending_bookings' %}">Review pending</a></li>
                   {% endif %}
                 </ul>
               </details>
@@ -88,7 +89,7 @@
             {% endif %}
 
             {# Wrap Analytics in {% if user.is_staff %} once role-based access is in place #}
-            <li><a class="nav-link{% if app == 'analytics' %} active{% endif %}" href="{{ analytics_url|default:'/' }}">Analytics</a></li>
+            <li><a class="nav-link{% if request.path|slice:':11' == '/analytics/' %} active{% endif %}" href="{{ analytics_url|default:'/' }}">Analytics</a></li>
             <li><a class="nav-link{% if page == 'about' %} active{% endif %}" href="{{ about_url|default:'/' }}">About</a></li>
           </ul>
         </nav>
@@ -100,7 +101,11 @@
 
 
           {% if user.is_authenticated %}
-            <a class="btn btn-outline" href="{% url 'accounts:profile' %}">Dashboard</a>
+            {% if user.is_staff or user.is_superuser or user.role == 'admin' %}
+              <a class="btn btn-outline" href="{% url 'core:admin_dashboard' %}">Dashboard</a>
+            {% else %}
+              <a class="btn btn-outline" href="{% url 'accounts:profile' %}">Dashboard</a>
+            {% endif %}
             <a class="btn btn-primary" href="{% url 'accounts:profile' %}">
               <i class="fa-regular fa-user" aria-hidden="true"></i> {{ user.profile.first_name|default:user.username }}
             </a>

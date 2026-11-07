@@ -1,0 +1,254 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Admin Dashboard | ResourceHub{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<!-- ============ HEADER ============ -->
+<section class="page-head">
+  <div class="container db-head">
+    <div>
+      <h1>Admin dashboard</h1>
+      <p>Overview of resources, bookings and check-ins &middot; {{ today|date:"l, j F Y" }}</p>
+    </div>
+    <div class="db-head-actions">
+      <a class="btn btn-outline" href="{% url 'resources:category_list' %}">
+        <i class="fa-solid fa-tags" aria-hidden="true"></i> Categories
+      </a>
+      <a class="btn btn-primary" href="{% url 'resources:resource_create' %}">
+        <i class="fa-solid fa-plus" aria-hidden="true"></i> Add resource
+      </a>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container db-wrap">
+
+    <!-- ============ STAT CARDS ============ -->
+    <ul class="db-stats">
+      <li class="db-stat tone-violet">
+        <span class="db-stat-icon"><i class="fa-solid fa-door-open" aria-hidden="true"></i></span>
+        <div>
+          <strong>{{ stats.resources }}</strong>
+          <span>Resources</span>
+          <small>{{ stats.active_resources }} active</small>
+        </div>
+      </li>
+      <li class="db-stat tone-blue">
+        <span class="db-stat-icon"><i class="fa-solid fa-layer-group" aria-hidden="true"></i></span>
+        <div>
+          <strong>{{ stats.categories }}</strong>
+          <span>Categories</span>
+          <small>Resource groups</small>
+        </div>
+      </li>
+      <li class="db-stat tone-green">
+        <span class="db-stat-icon"><i class="fa-regular fa-calendar-check" aria-hidden="true"></i></span>
+        <div>
+          <strong>{{ stats.bookings }}</strong>
+          <span>Total bookings</span>
+          <small>{{ stats.today_bookings }} today</small>
+        </div>
+      </li>
+      <li class="db-stat tone-orange">
+        <span class="db-stat-icon"><i class="fa-regular fa-hourglass-half" aria-hidden="true"></i></span>
+        <div>
+          <strong>{{ stats.pending }}</strong>
+          <span>Pending</span>
+          <small>Waiting for approval</small>
+        </div>
+      </li>
+      <li class="db-stat tone-pink">
+        <span class="db-stat-icon"><i class="fa-regular fa-user" aria-hidden="true"></i></span>
+        <div>
+          <strong>{{ stats.users }}</strong>
+          <span>Registered users</span>
+          <small>Active accounts</small>
+        </div>
+      </li>
+      <li class="db-stat tone-teal">
+        <span class="db-stat-icon"><i class="fa-solid fa-qrcode" aria-hidden="true"></i></span>
+        <div>
+          <strong>{{ stats.checkins_today }}</strong>
+          <span>Check-ins today</span>
+          <small>{{ stats.no_shows }} no-shows overall</small>
+        </div>
+      </li>
+      <li class="db-stat tone-red">
+        <span class="db-stat-icon"><i class="fa-solid fa-ban" aria-hidden="true"></i></span>
+        <div>
+          <strong>{{ stats.cancelled }}</strong>
+          <span>Cancelled / rejected</span>
+          <small>All time</small>
+        </div>
+      </li>
+      <li class="db-stat tone-indigo">
+        <span class="db-stat-icon"><i class="fa-solid fa-chart-pie" aria-hidden="true"></i></span>
+        <div>
+          <strong>{{ stats.utilization }}%</strong>
+          <span>Utilization</span>
+          <small>Resources with bookings</small>
+        </div>
+      </li>
+    </ul>
+
+    <!-- ============ QUICK ACTIONS ============ -->
+    <div class="db-actions">
+      <a href="{% url 'bookings:booking_list' %}"><i class="fa-regular fa-calendar-check" aria-hidden="true"></i> All bookings</a>
+      <a href="{% url 'resources:resource_list' %}"><i class="fa-solid fa-door-open" aria-hidden="true"></i> All resources</a>
+      <a href="{% url 'checkins:checkin_history' %}"><i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i> Check-in history</a>
+      <a href="{% url 'checkins:no_show_policy' %}"><i class="fa-solid fa-gavel" aria-hidden="true"></i> No-show policy</a>
+      <a href="{% url 'sharings:shared_pool' %}"><i class="fa-solid fa-share-nodes" aria-hidden="true"></i> Shared pool</a>
+      <a href="{% url 'sharings:shared_requests' %}"><i class="fa-solid fa-inbox" aria-hidden="true"></i> Sharing requests</a>
+      <form method="post" action="{% url 'checkins:mark_no_show' %}"
+            onsubmit="return confirm('Mark all missed bookings as no-show?');">
+        {% csrf_token %}
+        <button type="submit"><i class="fa-solid fa-user-slash" aria-hidden="true"></i> Mark no-shows</button>
+      </form>
+    </div>
+
+    <div class="db-grid">
+
+      <!-- ============ RECENT BOOKINGS ============ -->
+      <div class="panel db-span-2">
+        <div class="db-panel-head">
+          <h2 class="panel-title">Recent bookings</h2>
+          <a class="link-more" href="{% url 'bookings:booking_list' %}">View all <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
+        </div>
+
+        {% if recent_bookings %}
+        <div class="table-wrap">
+          <table class="data-table db-table">
+            <thead>
+              <tr>
+                <th scope="col">ID</th>
+                <th scope="col">Resource</th>
+                <th scope="col">User</th>
+                <th scope="col">When</th>
+                <th scope="col">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for b in recent_bookings %}
+              <tr>
+                <td data-label="ID"><a href="{% url 'bookings:booking_list' %}{{ b.pk }}/">#{{ b.pk }}</a></td>
+                <td data-label="Resource"><strong>{{ b.resource.name }}</strong></td>
+                <td data-label="User">{{ b.user.get_full_name|default:b.user.username }}</td>
+                <td data-label="When">{{ b.start_time|date:"d M, H:i" }} &ndash; {{ b.end_time|date:"H:i" }}</td>
+                <td data-label="Status"><span class="db-badge db-badge-{{ b.status|lower|slugify }}">{{ b.status }}</span></td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <p class="db-empty">No bookings yet.</p>
+        {% endif %}
+      </div>
+
+      <!-- ============ BOOKINGS BY STATUS ============ -->
+      <div class="panel">
+        <h2 class="panel-title">Bookings by status</h2>
+        {% if status_breakdown %}
+        <ul class="db-bars">
+          {% for s in status_breakdown %}
+          <li>
+            <div class="db-bar-label">
+              <span class="db-badge db-badge-{{ s.status|lower|slugify }}">{{ s.status }}</span>
+              <strong>{{ s.count }}</strong>
+            </div>
+            <div class="db-bar"><span style="width: {{ s.percent }}%"></span></div>
+          </li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <p class="db-empty">No data yet.</p>
+        {% endif %}
+      </div>
+
+      <!-- ============ LAST 7 DAYS ============ -->
+      <div class="panel">
+        <h2 class="panel-title">Bookings, last 7 days</h2>
+        <div class="db-chart" role="img" aria-label="Bookings per day for the last 7 days">
+          {% for d in last_7_days %}
+          <div class="db-col">
+            <span class="db-col-count">{{ d.count }}</span>
+            <span class="db-col-bar" style="height: {{ d.percent }}%"></span>
+            <span class="db-col-label">{{ d.label }}</span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- ============ TOP RESOURCES ============ -->
+      <div class="panel">
+        <h2 class="panel-title">Most booked resources</h2>
+        {% if top_resources %}
+        <ol class="db-rank">
+          {% for r in top_resources %}
+          <li>
+            <div class="db-rank-top">
+              <a href="{% url 'resources:resource_detail' r.pk %}">{{ r.name }}</a>
+              <strong>{{ r.total }}</strong>
+            </div>
+            <small>{{ r.category.name }}</small>
+            <div class="db-bar"><span style="width: {{ r.percent }}%"></span></div>
+          </li>
+          {% endfor %}
+        </ol>
+        {% else %}
+        <p class="db-empty">No bookings yet.</p>
+        {% endif %}
+      </div>
+
+      <!-- ============ RESOURCES BY CATEGORY ============ -->
+      <div class="panel">
+        <div class="db-panel-head">
+          <h2 class="panel-title">Resources by category</h2>
+          <a class="link-more" href="{% url 'resources:category_list' %}">Manage</a>
+        </div>
+        {% if category_stats %}
+        <ul class="db-list">
+          {% for c in category_stats %}
+          <li>
+            <a href="{% url 'resources:resource_list' %}?category={{ c.pk }}">{{ c.name }}</a>
+            <span class="db-count">{{ c.resource_count }}</span>
+          </li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <p class="db-empty">No categories yet.</p>
+        {% endif %}
+      </div>
+
+      <!-- ============ UPCOMING TODAY ============ -->
+      <div class="panel db-span-2">
+        <h2 class="panel-title">Today's schedule</h2>
+        {% if today_bookings %}
+        <ul class="db-timeline">
+          {% for b in today_bookings %}
+          <li>
+            <span class="db-time">{{ b.start_time|time:"H:i" }}&ndash;{{ b.end_time|time:"H:i" }}</span>
+            <div>
+              <strong>{{ b.resource.name }}</strong>
+              <small>{{ b.user.get_full_name|default:b.user.username }}</small>
+            </div>
+            <span class="db-badge db-badge-{{ b.status|lower|slugify }}">{{ b.status }}</span>
+          </li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <p class="db-empty">Nothing scheduled for today.</p>
+        {% endif %}
+      </div>
+
+    </div>
+  </div>
+</section>
+{% endblock %}

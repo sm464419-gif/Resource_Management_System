@@ -55,7 +55,7 @@
   </div>
 </section>
 
-<!-- ============ BROWSE BY CATEGORY ============ -->
+<!-- ============ BROWSE BY CATEGORY (with pictures) ============ -->
 <section class="section" aria-labelledby="catTitle">
   <div class="container">
     <div class="section-head">
@@ -76,13 +76,21 @@
     <ul class="cat-grid">
       {% for category in categories %}
       <li>
-        <a class="cat-card tone-{% cycle 'violet' 'blue' 'green' 'orange' 'pink' 'teal' %}"
+        <a class="cat-card has-pic"
            href="{% url 'resources:resource_list' %}?category={{ category.pk }}">
-          <span class="cat-icon">
-            <i class="fa-solid fa-layer-group" aria-hidden="true"></i>
+          <span class="cat-media">
+            {% if category.picture %}
+              <img src="{{ category.picture.url }}" alt="" loading="lazy">
+            {% else %}
+              <span class="cat-fallback" aria-hidden="true">
+                <i class="fa-solid fa-layer-group"></i>
+              </span>
+            {% endif %}
           </span>
-          <h3>{{ category.name }}</h3>
-          <p>{{ category.resource_count }} Resource{{ category.resource_count|pluralize }}</p>
+          <span class="cat-info">
+            <h3>{{ category.name }}</h3>
+            <p>{{ category.resource_count }} Resource{{ category.resource_count|pluralize }}</p>
+          </span>
           <span class="cat-go" aria-hidden="true"><i class="fa-solid fa-arrow-right"></i></span>
         </a>
       </li>

@@ -1,0 +1,296 @@
+/* ==========================================
+   ADMIN DASHBOARD  (static/css/dashboard.css)
+   Uses the same purple theme as ResourceHub.
+   Reuses .page-head, .panel, .panel-title, .btn,
+   .table-wrap, .data-table and .link-more from your other CSS.
+   ========================================== */
+
+:root {
+  --db-purple: #7c3aed;
+  --db-purple-dark: #4c1d95;
+  --db-ink: #2e1065;
+  --db-muted: #6b6485;
+  --db-line: #ece7f7;
+  --db-soft: #f5f1fd;
+}
+
+/* ---------- header ---------- */
+.db-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.db-head-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+
+.db-wrap { display: flex; flex-direction: column; gap: 24px; }
+
+/* ---------- stat cards ---------- */
+.db-stats {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 16px;
+}
+.db-stat {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 20px;
+  background: #fff;
+  border: 1px solid var(--db-line);
+  border-radius: 16px;
+  box-shadow: 0 2px 10px rgba(76, 29, 149, .05);
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+.db-stat:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(76, 29, 149, .12);
+}
+.db-stat-icon {
+  flex: none;
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  font-size: 1.3rem;
+  color: var(--tone);
+  background: var(--tone-bg);
+}
+.db-stat strong {
+  display: block;
+  font-size: 1.7rem;
+  line-height: 1.1;
+  color: var(--db-ink);
+}
+.db-stat span { display: block; font-weight: 600; color: var(--db-ink); }
+.db-stat small { color: var(--db-muted); }
+
+.tone-violet { --tone: #7c3aed; --tone-bg: #f1e9ff; }
+.tone-blue   { --tone: #2563eb; --tone-bg: #e5eeff; }
+.tone-green  { --tone: #059669; --tone-bg: #dcf7ec; }
+.tone-orange { --tone: #ea580c; --tone-bg: #ffeadb; }
+.tone-pink   { --tone: #db2777; --tone-bg: #fde4f0; }
+.tone-teal   { --tone: #0d9488; --tone-bg: #d9f5f2; }
+.tone-red    { --tone: #dc2626; --tone-bg: #fde3e3; }
+.tone-indigo { --tone: #4f46e5; --tone-bg: #e8e7fd; }
+
+/* ---------- quick actions ---------- */
+.db-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.db-actions form { margin: 0; }
+.db-actions a,
+.db-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  font: inherit;
+  font-weight: 600;
+  color: var(--db-purple-dark);
+  background: #fff;
+  border: 1px solid var(--db-line);
+  border-radius: 999px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background .15s ease, color .15s ease, border-color .15s ease;
+}
+.db-actions a:hover,
+.db-actions button:hover {
+  color: #fff;
+  background: var(--db-purple);
+  border-color: var(--db-purple);
+}
+
+/* ---------- main grid ---------- */
+.db-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 20px;
+}
+.db-span-2 { grid-column: span 2; }
+
+.db-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.db-panel-head .panel-title { margin: 0; }
+
+.db-empty {
+  margin: 12px 0 0;
+  padding: 18px;
+  text-align: center;
+  color: var(--db-muted);
+  background: var(--db-soft);
+  border-radius: 12px;
+}
+
+/* ---------- table ---------- */
+.db-table td a { color: var(--db-purple); font-weight: 600; text-decoration: none; }
+.db-table td a:hover { text-decoration: underline; }
+
+/* ---------- status badges ---------- */
+.db-badge {
+  display: inline-block;
+  padding: 3px 11px;
+  font-size: .8rem;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--db-purple-dark);
+  background: #efe8fd;
+  border-radius: 999px;
+}
+.db-badge-approved,
+.db-badge-confirmed,
+.db-badge-completed  { color: #047857; background: #dcf7ec; }
+.db-badge-pending    { color: #b45309; background: #fff1d6; }
+.db-badge-cancelled,
+.db-badge-rejected   { color: #b91c1c; background: #fde3e3; }
+
+/* ---------- horizontal bars ---------- */
+.db-bars,
+.db-rank,
+.db-list { list-style: none; margin: 14px 0 0; padding: 0; }
+
+.db-bars li,
+.db-rank li { margin-bottom: 14px; }
+
+.db-bar-label,
+.db-rank-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+.db-bar {
+  height: 8px;
+  overflow: hidden;
+  background: var(--db-soft);
+  border-radius: 999px;
+}
+.db-bar span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--db-purple), #a78bfa);
+  border-radius: inherit;
+}
+
+/* ---------- ranking ---------- */
+.db-rank { counter-reset: rank; }
+.db-rank li { counter-increment: rank; position: relative; padding-left: 34px; }
+.db-rank li::before {
+  content: counter(rank);
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  font-size: .8rem;
+  font-weight: 700;
+  color: #fff;
+  background: var(--db-purple);
+  border-radius: 50%;
+}
+.db-rank a { color: var(--db-ink); font-weight: 600; text-decoration: none; }
+.db-rank a:hover { color: var(--db-purple); }
+.db-rank small { display: block; margin-bottom: 6px; color: var(--db-muted); }
+
+/* ---------- simple list ---------- */
+.db-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--db-line);
+}
+.db-list li:last-child { border-bottom: 0; }
+.db-list a { color: var(--db-ink); text-decoration: none; }
+.db-list a:hover { color: var(--db-purple); }
+.db-count {
+  min-width: 32px;
+  padding: 2px 10px;
+  text-align: center;
+  font-weight: 700;
+  color: var(--db-purple-dark);
+  background: var(--db-soft);
+  border-radius: 999px;
+}
+
+/* ---------- 7 day column chart ---------- */
+.db-chart {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 10px;
+  height: 200px;
+  margin-top: 18px;
+}
+.db-col {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+.db-col-bar {
+  display: block;
+  width: 100%;
+  max-width: 38px;
+  min-height: 4px;
+  background: linear-gradient(180deg, #a78bfa, var(--db-purple));
+  border-radius: 8px 8px 0 0;
+}
+.db-col-count { font-size: .85rem; font-weight: 700; color: var(--db-ink); }
+.db-col-label { font-size: .78rem; color: var(--db-muted); }
+
+/* ---------- today's schedule ---------- */
+.db-timeline { list-style: none; margin: 14px 0 0; padding: 0; }
+.db-timeline li {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--db-line);
+}
+.db-timeline li:last-child { border-bottom: 0; }
+.db-timeline li > div { flex: 1; }
+.db-timeline strong { display: block; color: var(--db-ink); }
+.db-timeline small { color: var(--db-muted); }
+.db-time {
+  flex: none;
+  min-width: 108px;
+  padding: 6px 10px;
+  text-align: center;
+  font-weight: 700;
+  font-size: .9rem;
+  color: var(--db-purple-dark);
+  background: var(--db-soft);
+  border-radius: 10px;
+}
+
+/* ---------- responsive ---------- */
+@media (max-width: 760px) {
+  .db-span-2 { grid-column: auto; }
+  .db-grid { grid-template-columns: 1fr; }
+  .db-stats { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
+  .db-stat { padding: 14px; gap: 12px; }
+  .db-stat-icon { width: 44px; height: 44px; font-size: 1.1rem; }
+  .db-stat strong { font-size: 1.4rem; }
+  .db-timeline li { flex-wrap: wrap; }
+}
