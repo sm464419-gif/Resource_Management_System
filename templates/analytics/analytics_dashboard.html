@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Analytics{% endblock %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'css/analytics.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="an-page">
+  <div class="container">
+
+    <div class="an-head">
+      <div>
+        <h1 class="an-title">Analytics</h1>
+        <p class="an-sub">Usage and booking trends across campus resources.</p>
+      </div>
+    </div>
+
+    <nav class="an-tabs" aria-label="Analytics sections">
+      <a href="{% url 'analytics:analytics_dashboard' %}" class="an-tab active" aria-current="page">Dashboard</a>
+      <a href="{% url 'analytics:utilization_report' %}" class="an-tab">Utilization</a>
+      <a href="{% url 'analytics:demand_forecast' %}" class="an-tab">Demand forecast</a>
+      <a href="{% url 'analytics:report_export' %}" class="an-tab">Export</a>
+    </nav>
+
+    <div class="an-cards">
+      <div class="an-card">
+        <span class="an-card-icon"><i class="fa-solid fa-calendar-check" aria-hidden="true"></i></span>
+        <div>
+          <p class="an-card-label">Total bookings</p>
+          <p class="an-card-value">{{ total_bookings|default:0 }}</p>
+        </div>
+      </div>
+      <div class="an-card">
+        <span class="an-card-icon"><i class="fa-solid fa-gauge-high" aria-hidden="true"></i></span>
+        <div>
+          <p class="an-card-label">Average utilization</p>
+          <p class="an-card-value">{{ avg_utilization|default:0|floatformat:1 }}%</p>
+        </div>
+      </div>
+      <div class="an-card">
+        <span class="an-card-icon"><i class="fa-solid fa-user-slash" aria-hidden="true"></i></span>
+        <div>
+          <p class="an-card-label">No-shows</p>
+          <p class="an-card-value">{{ total_no_shows|default:0 }}</p>
+        </div>
+      </div>
+      <div class="an-card">
+        <span class="an-card-icon"><i class="fa-regular fa-clock" aria-hidden="true"></i></span>
+        <div>
+          <p class="an-card-label">Peak hour</p>
+          <p class="an-card-value">{% if peak_hour is not None %}{{ peak_hour|stringformat:"02d" }}:00{% else %}-{% endif %}</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="an-grid">
+
+      <div class="an-panel">
+        <h2 class="an-panel-title">Bookings over time</h2>
+        {% if trend %}
+        <ul class="an-columns">
+          {% for t in trend %}
+          <li>
+            <div class="an-col-track">
+              <span class="an-col-bar" style="height: {{ t.percent }}%"></span>
+            </div>
+            <span class="an-col-val">{{ t.bookings }}</span>
+            <span class="an-col-label">{{ t.label }}</span>
+          </li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <p class="an-muted">No booking data yet.</p>
+        {% endif %}
+      </div>
+
+      <div class="an-panel">
+        <h2 class="an-panel-title">Most used resources</h2>
+        {% if resource_usage %}
+        <ul class="an-bars">
+          {% for r in resource_usage %}
+          <li class="an-bar-row">
+            <span class="an-bar-label" title="{{ r.name }}">{{ r.name }}</span>
+            <span class="an-bar-track"><span class="an-bar-fill" style="width: {{ r.percent }}%"></span></span>
+            <span class="an-bar-value">{{ r.bookings }}</span>
+          </li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <p class="an-muted">No usage data yet.</p>
+        {% endif %}
+      </div>
+
+      <div class="an-panel an-wide">
+        <div class="an-panel-head">
+          <h2 class="an-panel-title">Upcoming demand</h2>
+          <a class="an-link" href="{% url 'analytics:demand_forecast' %}">See all forecasts</a>
+        </div>
+        {% if top_forecasts %}
+        <ul class="an-bars">
+          {% for f in top_forecasts %}
+          {% widthratio f.confidence_score 1 100 as conf %}
+          <li class="an-bar-row">
+            <span class="an-bar-label" title="{{ f.resource.name }}">{{ f.resource.name }}</span>
+            <span class="an-bar-track"><span class="an-bar-fill" style="width: {{ conf }}%"></span></span>
+            <span class="an-bar-value">{{ f.predicted_demand }} ({{ f.forecast_period }})</span>
+          </li>
+          {% endfor %}
+        </ul>
+        <p class="an-note">Bar length shows how confident the forecast is.</p>
+        {% else %}
+        <p class="an-muted">No forecasts generated yet.</p>
+        {% endif %}
+      </div>
+
+    </div>
+  </div>
+</section>
+{% endblock %}
