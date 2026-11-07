@@ -50,18 +50,17 @@
       </a>
 
       {# Check-in and Share: replace the "#" with {% url %} once the checkins and sharings URLs exist #}
-      {% if booking.status == 'Approved' %}
-      <hr>
-      <a class="btn btn-primary btn-block" href="#">
-        <i class="fa-solid fa-qrcode" aria-hidden="true"></i> Check in
-      </a>
-      {% endif %}
-      {% if booking.status != 'Cancelled' and booking.status != 'Rejected' %}
-      <a class="btn btn-outline btn-block" href="#">
-        <i class="fa-solid fa-share-nodes" aria-hidden="true"></i> Share
-      </a>
-      {% endif %}
-
+     {% if booking.status == 'Approved' %}
+<hr>
+<a class="btn btn-primary btn-block" href="{% url 'checkins:checkins' %}?booking={{ booking.id }}">
+  <i class="fa-solid fa-qrcode" aria-hidden="true"></i> Check in
+</a>
+{% endif %}
+{% if booking.status != 'Cancelled' and booking.status != 'Rejected' %}
+<a class="btn btn-outline btn-block" href="{% url 'sharings:release_to_pool' %}?booking={{ booking.id }}">
+  <i class="fa-solid fa-share-nodes" aria-hidden="true"></i> Share
+</a>
+{% endif %}
       {# Cancel is a POST form because cancel_booking only accepts POST #}
       {% if booking.status != 'Cancelled' and booking.status != 'Rejected' and booking.status != 'Completed' %}
       <hr>

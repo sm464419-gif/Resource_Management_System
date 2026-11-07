@@ -74,7 +74,7 @@
                   <li><a href="{% url 'bookings:booking_calendar' %}">Calendar</a></li>
                   <li><a href="{% url 'bookings:booking_history' %}">History</a></li>
                   <li><a href="{% url 'bookings:waitlist' %}">Waitlist</a></li>
-                  <li><a href="{% url 'checkin:checkin' %}">Check-in</a></li>
+                  <li><a href="{% url 'checkins:checkins' %}">Check-in</a></li>
                   <li><a href="{{ shared_url|default:'/' }}">Shared with me</a></li>
                   {% if user.is_staff %}
                   <li><a href="{% url 'bookings:conflict_list' %}">Conflicts</a></li>

@@ -39,7 +39,7 @@
         </div>
         <div class="history-side">
           <span class="badge badge-{{ b.status|lower|slugify }}">{{ b.status }}</span>
-          <a class="btn btn-outline" href="{% url 'bookings:create_booking' booking.resource.id %}">Book again</a>
+          <a class="btn btn-outline" href="{% url 'bookings:create_booking' b.resource.id %}">Book again</a>
         </div>
       </article>
       {% endfor %}

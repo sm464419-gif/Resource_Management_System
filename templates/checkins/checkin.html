@@ -21,7 +21,7 @@
 
     <header class="ck-head">
       <h1>Check in to your booking</h1>
-      <p>Confirm you've arrived so your slot stays reserved.</p>
+      <p>Scan the QR code at the location so your slot stays reserved.</p>
     </header>
 
     <div class="ck-grid">
@@ -34,14 +34,14 @@
             <h2 id="bookingTitle">{{ booking.resource.name|default:"Resource name" }}</h2>
             <p class="ck-muted">{{ booking.resource.category.name|default:"Category" }}</p>
           </div>
-          <span class="ck-badge ck-badge-{{ booking.status|default:'pending' }}">
-            {{ booking.get_status_display|default:"Confirmed" }}
+          <span class="ck-badge ck-badge-{{ booking.status|lower|default:'pending' }}">
+            {{ booking.status|default:"Pending" }}
           </span>
         </div>
 
         <dl class="ck-details">
           <div><dt><i class="fa-regular fa-calendar" aria-hidden="true"></i> Date</dt>
-               <dd>{{ booking.date|date:"l, j F Y"|default:"—" }}</dd></div>
+               <dd>{{ booking.start_time|date:"l, j F Y"|default:"—" }}</dd></div>
           <div><dt><i class="fa-regular fa-clock" aria-hidden="true"></i> Time</dt>
                <dd>{{ booking.start_time|time:"g:i A"|default:"—" }} – {{ booking.end_time|time:"g:i A"|default:"—" }}</dd></div>
           <div><dt><i class="fa-solid fa-location-dot" aria-hidden="true"></i> Location</dt>
@@ -58,7 +58,7 @@
             <strong>On time</strong><span>Up to the start time</span>
           </li>
           <li class="ck-step{% if window_state == 'grace' %} is-current{% endif %}">
-            <strong>Late</strong><span>Up to 15 min after</span>
+            <strong>Late</strong><span>Up to {{ grace }} min after</span>
           </li>
           <li class="ck-step ck-step-end{% if window_state == 'closed' %} is-current{% endif %}">
             <strong>No-show</strong><span>Slot is released</span>
@@ -70,22 +70,40 @@
       <aside class="ck-card ck-form-card" aria-labelledby="formTitle">
         <h2 id="formTitle">Confirm arrival</h2>
 
-        {% if booking.checked_in_at %}
+        {% if not booking %}
+          <div class="ck-alert ck-alert-info" role="status">
+            <i class="fa-regular fa-clock" aria-hidden="true"></i>
+            <div>
+              <strong>No booking selected.</strong>
+              <p>Open this page from one of your <a href="{% url 'bookings:booking_list' %}">bookings</a>.</p>
+            </div>
+          </div>
+
+        {% elif window_state == 'unavailable' %}
+          <div class="ck-alert ck-alert-danger" role="alert">
+            <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+            <div>
+              <strong>This booking can't be checked in.</strong>
+              <p>Its status is {{ booking.status }}.</p>
+            </div>
+          </div>
+
+        {% elif checkin.checked_in_at %}
           <div class="ck-alert ck-alert-success" role="status">
             <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
             <div>
               <strong>You're checked in.</strong>
-              <p>Checked in at {{ booking.checked_in_at|time:"g:i A" }}.</p>
+              <p>Checked in at {{ checkin.checked_in_at|time:"g:i A" }}{% if checkin.method == "qr" %} via QR code{% endif %}.</p>
             </div>
           </div>
-          <a class="btn btn-outline btn-block" href="{% url 'checkin:checkin_history' %}">View check-in history</a>
+          <a class="btn btn-outline btn-block" href="{% url 'checkins:checkin_history' %}">View check-in history</a>
 
         {% elif window_state == 'early' %}
           <div class="ck-alert ck-alert-info" role="status">
             <i class="fa-regular fa-clock" aria-hidden="true"></i>
             <div>
               <strong>Check-in isn't open yet.</strong>
-              <p>It opens at {{ window_opens|time:"g:i A"|default:"15 minutes before your start time" }}.</p>
+              <p>It opens on {{ window_opens|date:"D, j M" }} at {{ window_opens|time:"g:i A" }}.</p>
             </div>
           </div>
           <button class="btn btn-primary btn-lg btn-block" type="button" disabled>Check in</button>
@@ -95,7 +113,7 @@
             <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
             <div>
               <strong>The check-in window has closed.</strong>
-              <p>This booking is marked as a no-show. Read the <a href="{% url 'checkin:no_show_policy' %}">no-show policy</a> to see what happens next.</p>
+              <p>This booking is marked as a no-show. Read the <a href="{% url 'checkins:no_show_policy' %}">no-show policy</a> to see what happens next.</p>
             </div>
           </div>
           <button class="btn btn-primary btn-lg btn-block" type="button" disabled>Check in</button>
@@ -111,40 +129,82 @@
           </div>
           {% endif %}
 
-          <form method="post" action="{% url 'checkin:checkin' %}" class="ck-form" novalidate>
+          <form method="post" action="{% url 'checkins:checkins' %}" class="ck-form" id="checkinForm">
             {% csrf_token %}
-            {% if booking.id %}<input type="hidden" name="booking_id" value="{{ booking.id }}">{% endif %}
+            <input type="hidden" name="booking_id" value="{{ booking.id }}">
 
+            <!-- Camera scanner -->
             <div class="ck-field">
-              <label for="id_code">Check-in code <span class="ck-muted">(optional)</span></label>
-              <input id="id_code" name="code" type="text" inputmode="text" autocomplete="off"
-                     maxlength="6" placeholder="e.g. 4F7K2A" class="ck-code">
-              <small>Find the code on the sign at the entrance.</small>
+              <button type="button" class="btn btn-primary btn-lg btn-block" id="startScan">
+                <i class="fa-solid fa-qrcode" aria-hidden="true"></i> Scan QR code
+              </button>
+              <div id="qr-reader" style="width:100%; margin-top:12px; display:none;"></div>
+              <small id="scanStatus" class="ck-muted"></small>
             </div>
 
+            <!-- Typed / pasted link or code (also filled by the scanner) -->
             <div class="ck-field">
-              <label for="id_condition">Condition of the resource</label>
-              <select id="id_condition" name="condition">
-                <option value="good">Clean and ready to use</option>
-                <option value="minor">Minor issue (I'll note it below)</option>
-                <option value="unusable">Not usable</option>
-              </select>
+              <label for="id_code">
+                QR code value
+                {% if not require_qr %}<span class="ck-muted">(optional)</span>{% endif %}
+              </label>
+              <input id="id_code" name="code" type="text" autocomplete="off"
+                     placeholder="Scan, or paste the link from the QR" class="ck-code">
             </div>
 
-            <div class="ck-field">
-              <label for="id_notes">Notes <span class="ck-muted">(optional)</span></label>
-              <textarea id="id_notes" name="notes" rows="3" placeholder="Anything staff should know?"></textarea>
-            </div>
-
+            {% if not require_qr %}
             <label class="ck-check">
-              <input type="checkbox" name="confirm" required>
+              <input type="checkbox" name="confirm">
               <span>I'm at the location and will follow the usage rules.</span>
             </label>
+            {% endif %}
 
             <button type="submit" class="btn btn-primary btn-lg btn-block">
               <i class="fa-solid fa-check" aria-hidden="true"></i> Check in now
             </button>
           </form>
+
+          <script src="https://unpkg.com/html5-qrcode"></script>
+          <script>
+            (function () {
+              var form = document.getElementById("checkinForm");
+              var input = document.getElementById("id_code");
+              var btn = document.getElementById("startScan");
+              var box = document.getElementById("qr-reader");
+              var status = document.getElementById("scanStatus");
+              var scanner = null;
+
+              btn.addEventListener("click", function () {
+                if (scanner) { return; }
+                box.style.display = "block";
+                status.textContent = "Point your camera at the QR code…";
+                scanner = new Html5Qrcode("qr-reader");
+                scanner.start(
+                  { facingMode: "environment" },
+                  { fps: 10, qrbox: 240 },
+                  function (text) {
+                    input.value = text;
+                    status.textContent = "QR code read. Checking in…";
+                    scanner.stop().then(function () { form.submit(); });
+                  },
+                  function () { /* ignore frames without a code */ }
+                ).catch(function () {
+                  status.textContent = "Camera unavailable. Paste the link instead.";
+                  scanner = null;
+                });
+              });
+            })();
+          </script>
+        {% endif %}
+
+        <!-- Test helper: QR for admins, or for everyone while DEBUG = True -->
+        {% if qr_image %}
+        <div class="ck-field" style="margin-top:16px; text-align:center;">
+          <small class="ck-muted">Test only (admins / debug): scan this with your phone, or copy the link below.</small>
+          <img src="data:image/png;base64,{{ qr_image }}" alt="Check-in QR"
+               style="max-width:220px; display:block; margin:8px auto;">
+          <input type="text" readonly value="{{ qr_url }}" onclick="this.select()" style="width:100%;">
+        </div>
         {% endif %}
 
         <div class="ck-foot">
@@ -155,7 +215,7 @@
             <button type="submit" class="ck-link" style="background:none;border:0;padding:0;cursor:pointer;font:inherit;color:inherit;text-decoration:underline">Can't make it? Cancel booking</button>
           </form> &middot;
           {% endif %}
-          <a href="{% url 'checkin:no_show_policy' %}">No-show policy</a>
+          <a href="{% url 'checkins:no_show_policy' %}">No-show policy</a>
         </div>
       </aside>
 

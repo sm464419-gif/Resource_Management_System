@@ -1,4 +1,3 @@
-
 from django.shortcuts import render, get_object_or_404, redirect
 from django.db.models import Q
 from django.contrib import messages
@@ -33,7 +32,7 @@ admin_only = user_passes_test(is_admin)
 # ==========================================
 
 def resource_list(request):
-    resources = Resource.objects.all()
+    resources = Resource.objects.select_related("category")
     categories = ResourceCategory.objects.all()
 
     search = request.GET.get("q", "")
@@ -62,20 +61,17 @@ def resource_list(request):
 def resource_detail(request, pk):
     resource = get_object_or_404(Resource, pk=pk)
 
-    # Create the resource URL with its unique QR token
-    resource_url = request.build_absolute_uri(
-        reverse('resources:resource_detail', kwargs={'pk': resource.pk})
-    ) + f'?qr={resource.qr_code}'
+    qr_image = None
+    if is_admin(request.user):
+        # The QR opens the check-in page for this resource
+        checkin_url = request.build_absolute_uri(
+            reverse("checkins:qr_checkin", args=[resource.qr_code])
+        )
 
-    # Generate QR image
-    qr = qrcode.make(resource_url)
-
-    buffer = BytesIO()
-    qr.save(buffer, format='PNG')
-
-    qr_image = base64.b64encode(
-        buffer.getvalue()
-    ).decode('utf-8')
+        qr = qrcode.make(checkin_url)
+        buffer = BytesIO()
+        qr.save(buffer, format="PNG")
+        qr_image = base64.b64encode(buffer.getvalue()).decode("utf-8")
 
     return render(request, "resources/resource_detail.html", {
         "resource": resource,
@@ -92,7 +88,7 @@ def resource_detail(request, pk):
 def resource_create(request):
 
     if request.method == "POST":
-        form = ResourceForm(request.POST)
+        form = ResourceForm(request.POST, request.FILES)
 
         if form.is_valid():
             form.save()
@@ -123,7 +119,7 @@ def resource_update(request, pk):
     resource = get_object_or_404(Resource, pk=pk)
 
     if request.method == "POST":
-        form = ResourceForm(request.POST, instance=resource)
+        form = ResourceForm(request.POST, request.FILES, instance=resource)
 
         if form.is_valid():
             form.save()
@@ -194,9 +190,12 @@ def category_list(request):
 
     # Handle category form submission
     if request.method == "POST":
+        print("FILES:", request.FILES)   # temporary debug, remove later
+        print("POST:", request.POST)     # temporary debug, remove later
 
         form = ResourceCategoryForm(
             request.POST,
+            request.FILES,
             instance=category
         )
 
@@ -215,9 +214,10 @@ def category_list(request):
                 )
 
             return redirect("resources:category_list")
+        else:
+            print("ERRORS:", form.errors)   # temporary debug, remove later
 
     else:
-
         form = ResourceCategoryForm(instance=category)
 
     # Get all categories
@@ -273,9 +273,6 @@ def check_availability(resource_id, start_time, end_time):
 # ==========================================
 
 def get_utilization_rate(resource):
-
-
-
     return Booking.objects.filter(
         resource=resource
     ).count()

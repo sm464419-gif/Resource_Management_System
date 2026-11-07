@@ -10,6 +10,11 @@ def generate_device_code():
 class ResourceCategory(models.Model):
     name = models.CharField(max_length=100)
     description = models.TextField()
+    picture = models.ImageField(
+        upload_to='categories/',
+        blank=True,
+        null=True
+    )
 
     def __str__(self):
         return self.name
