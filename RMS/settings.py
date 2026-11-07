@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'checkins',
     'sharings',
     'analytics',
+    'notifications',
 
 
 
