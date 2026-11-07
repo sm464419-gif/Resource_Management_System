@@ -159,7 +159,7 @@ def create_booking(request, resource_id):
             messages.error(request, error)
 
         elif not is_free(resource, start_time, end_time):
-            # Slot taken: send the user to the waitlist with the form pre-filled
+
             messages.error(
                 request,
                 'This resource is already booked for that time. '
@@ -411,7 +411,7 @@ def leave_waitlist(request, id):
 def _set_status(request, id, status):
     booking = get_object_or_404(Booking, id=id, status='Pending')
 
-    # Can't approve if it overlaps an already approved booking
+
     if status == 'Approved':
         overlaps_approved = check_conflict(
             booking.resource, booking.start_time, booking.end_time,

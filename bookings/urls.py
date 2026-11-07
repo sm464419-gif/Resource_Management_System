@@ -4,7 +4,7 @@ from . import views
 app_name = 'bookings'
 
 urlpatterns = [
-    # User bookings
+
     path('', views.booking_list, name='booking_list'),
     path('create/<int:resource_id>/', views.create_booking, name='create_booking'),
     path('calendar/', views.booking_calendar, name='booking_calendar'),
@@ -17,12 +17,12 @@ urlpatterns = [
     path('waitlist/add/', views.add_to_waitlist, name='add_to_waitlist'),
     path('waitlist/<int:id>/leave/', views.leave_waitlist, name='leave_waitlist'),
 
-    # Staff: conflicts
+
     path('conflicts/', views.conflict_list, name='conflict_list'),
     path('conflicts/<int:id>/', views.conflict_detail, name='conflict_detail'),
     path('conflicts/<int:id>/resolve/', views.resolve_conflict, name='resolve_conflict'),
 
-    # Staff: approve / reject
+
     path('review/', views.pending_bookings, name='pending_bookings'),
     path('<int:id>/approve/', views.approve_booking, name='approve_booking'),
     path('<int:id>/reject/', views.reject_booking, name='reject_booking'),
