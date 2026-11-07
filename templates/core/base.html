@@ -78,6 +78,7 @@
                   <li><a href="{{ shared_url|default:'/' }}">Shared with me</a></li>
                   {% if user.is_staff %}
                   <li><a href="{% url 'bookings:conflict_list' %}">Conflicts</a></li>
+                    <li><a href="{% url 'bookings:pending_bookings' %}">Review pending</a></li>
                   {% endif %}
                 </ul>
               </details>

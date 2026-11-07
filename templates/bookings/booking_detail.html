@@ -41,22 +41,42 @@
 
     <aside class="panel side-panel">
       <h2 class="panel-title">Actions</h2>
-      <a class="btn btn-outline btn-block" href="{% url 'resources:resource_detail' booking.resource.pk %}"><i class="fa-solid fa-door-open" aria-hidden="true"></i> View resource</a>
-      <a class="btn btn-outline btn-block" href="{% url 'bookings:create_booking' booking.resource.pk %}">
-    <i class="fa-solid fa-rotate-right" aria-hidden="true"></i> Book again
-</a>
-     {% if booking.status != 'Cancelled' %}
-    <form method="POST"
-          action="{% url 'bookings:cancel_booking' booking.id %}">
-        {% csrf_token %}
 
+      <a class="btn btn-outline btn-block" href="{% url 'resources:resource_detail' booking.resource.pk %}">
+        <i class="fa-solid fa-door-open" aria-hidden="true"></i> View resource
+      </a>
+      <a class="btn btn-outline btn-block" href="{% url 'bookings:create_booking' booking.resource.pk %}">
+        <i class="fa-solid fa-rotate-right" aria-hidden="true"></i> Book again
+      </a>
+
+      {# Check-in and Share: replace the "#" with {% url %} once the checkins and sharings URLs exist #}
+      {% if booking.status == 'Approved' %}
+      <hr>
+      <a class="btn btn-primary btn-block" href="#">
+        <i class="fa-solid fa-qrcode" aria-hidden="true"></i> Check in
+      </a>
+      {% endif %}
+      {% if booking.status != 'Cancelled' and booking.status != 'Rejected' %}
+      <a class="btn btn-outline btn-block" href="#">
+        <i class="fa-solid fa-share-nodes" aria-hidden="true"></i> Share
+      </a>
+      {% endif %}
+
+      {# Cancel is a POST form because cancel_booking only accepts POST #}
+      {% if booking.status != 'Cancelled' and booking.status != 'Rejected' and booking.status != 'Completed' %}
+      <hr>
+      <form method="post" action="{% url 'bookings:cancel_booking' booking.id %}"
+            onsubmit="return confirm('Cancel this booking? The time slot will be released.');">
+        {% csrf_token %}
         <button type="submit" class="btn btn-danger btn-block">
-            <i class="fa-solid fa-ban"></i>
-            Cancel booking
+          <i class="fa-solid fa-ban" aria-hidden="true"></i> Cancel booking
         </button>
-    </form>
-{% endif %}
-      <a class="btn btn-outline btn-block" href="{% url 'bookings:booking_list' %}"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Back to bookings</a>
+      </form>
+      {% endif %}
+
+      <a class="btn btn-outline btn-block" href="{% url 'bookings:booking_list' %}">
+        <i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Back to bookings
+      </a>
     </aside>
   </div>
 </section>

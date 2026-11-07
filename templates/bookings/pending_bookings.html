@@ -1,0 +1,88 @@
+{% extends 'core/base.html' %}
+{% load static %}
+{% block title %}Review pending bookings{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/bookings.css' %}">
+<link rel="stylesheet" href="{% static 'css/conflicts.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="page-head">
+  <div class="container">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="{% url 'bookings:booking_list' %}">Bookings</a>
+      <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+      <span>Review pending</span>
+    </nav>
+    <div class="page-head-inner">
+      <div>
+        <h1>Review pending bookings</h1>
+        <p>Approve or reject booking requests. The user is emailed automatically.</p>
+      </div>
+      <div class="head-actions">
+        <a class="btn btn-outline" href="{% url 'bookings:conflict_list' %}"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i> Conflicts</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    {% if bookings %}
+    <p class="result-count">{{ bookings|length }} pending request{{ bookings|length|pluralize }}</p>
+    <div class="panel flush">
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th scope="col">Resource</th>
+              <th scope="col">Booked by</th>
+              <th scope="col">Date</th>
+              <th scope="col">Time</th>
+              <th scope="col">Status</th>
+              <th scope="col"><span class="sr-only">Actions</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for b in bookings %}
+            <tr>
+              <td data-label="Resource">
+                <span class="row-title">{{ b.resource.name }}</span>
+                <small class="row-sub">{{ b.purpose|truncatechars:48 }}</small>
+              </td>
+              <td data-label="Booked by">{{ b.user.get_full_name|default:b.user.username }}</td>
+              <td data-label="Date">{{ b.start_time|date:"D, d M Y" }}</td>
+              <td data-label="Time">{{ b.start_time|time:"H:i" }} – {{ b.end_time|time:"H:i" }}</td>
+              <td data-label="Status"><span class="badge badge-{{ b.status|lower|slugify }}">{{ b.status }}</span></td>
+              <td class="row-actions">
+                <form method="post" action="{% url 'bookings:approve_booking' b.id %}">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-primary btn-sm">
+                    <i class="fa-solid fa-check" aria-hidden="true"></i> Approve
+                  </button>
+                </form>
+                <form method="post" action="{% url 'bookings:reject_booking' b.id %}"
+                      onsubmit="return confirm('Reject this booking?');">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-danger btn-sm">
+                    <i class="fa-solid fa-xmark" aria-hidden="true"></i> Reject
+                  </button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <i class="fa-regular fa-circle-check" aria-hidden="true"></i>
+      <h2>Nothing to review</h2>
+      <p>There are no pending booking requests right now.</p>
+      <a class="btn btn-primary" href="{% url 'bookings:booking_list' %}">Back to bookings</a>
+    </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

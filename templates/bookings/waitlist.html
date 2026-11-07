@@ -37,25 +37,35 @@
       <div class="wait-list">
         {% for w in entries %}
         <article class="wait-item">
-          {% if w.position %}
-          <div class="wait-pos{% if w.position == 1 %} first{% endif %}" aria-label="Position {{ w.position }}">
+          {# queue_position is set in waitlist_view for waiting/notified entries only #}
+          {% if w.queue_position %}
+          <div class="wait-pos{% if w.queue_position == 1 %} first{% endif %}" aria-label="Position {{ w.queue_position }}">
             <small>Position</small>
-            <strong>#{{ w.position }}</strong>
+            <strong>#{{ w.queue_position }}</strong>
+          </div>
+          {% else %}
+          <div class="wait-pos" aria-hidden="true">
+            <small>Closed</small>
+            <strong>&ndash;</strong>
           </div>
           {% endif %}
+
           <div class="wait-body">
             <h3><a href="{% url 'resources:resource_detail' w.resource.pk %}">{{ w.resource.name }}</a></h3>
             <p class="row-sub">{{ w.requested_start|date:"D, d M Y" }} &bull; {{ w.requested_start|time:"H:i" }} – {{ w.requested_end|time:"H:i" }}</p>
+            {% if w.queue_position %}
             <p class="wait-ahead">
               {% if w.status == 'notified' %}
                 <i class="fa-solid fa-bell" aria-hidden="true"></i> A slot is available. Book it now!
-              {% elif w.position == 1 %}
+              {% elif w.queue_position == 1 %}
                 <i class="fa-solid fa-star" aria-hidden="true"></i> You are next in line.
-              {% elif w.position %}
-                <i class="fa-solid fa-users" aria-hidden="true"></i> {{ w.position|add:"-1" }} {{ w.position|add:"-1"|pluralize:"person,people" }} ahead of you
+              {% else %}
+                <i class="fa-solid fa-users" aria-hidden="true"></i> {{ w.queue_position|add:"-1" }} {{ w.queue_position|add:"-1"|pluralize:"person,people" }} ahead of you
               {% endif %}
             </p>
+            {% endif %}
           </div>
+
           <div class="wait-side">
             <span class="badge badge-{{ w.status|lower|slugify }}">{{ w.status|capfirst }}</span>
             {% if w.status == 'notified' %}
@@ -80,7 +90,7 @@
       {% endif %}
     </div>
 
-    <!-- Join form -->
+    <!-- Join form (pre-filled when you arrive from a taken booking slot) -->
     <aside class="panel side-panel">
       <h2 class="panel-title">Join the waitlist</h2>
       <form method="post" action="{% url 'bookings:add_to_waitlist' %}" class="wait-form" id="waitlistForm">
@@ -96,11 +106,11 @@
         </div>
         <div class="form-field">
           <label for="start_time">Start<span class="req" aria-hidden="true">*</span></label>
-          <input type="datetime-local" id="start_time" name="start_time" required>
+          <input type="datetime-local" id="start_time" name="start_time" value="{{ request.GET.start }}" required>
         </div>
         <div class="form-field">
           <label for="end_time">End<span class="req" aria-hidden="true">*</span></label>
-          <input type="datetime-local" id="end_time" name="end_time" required>
+          <input type="datetime-local" id="end_time" name="end_time" value="{{ request.GET.end }}" required>
           <small class="help">Must be after the start time.</small>
         </div>
         <button type="submit" class="btn btn-primary btn-block"><i class="fa-solid fa-hourglass-half" aria-hidden="true"></i> Join waitlist</button>
@@ -112,7 +122,10 @@
 
 {% block extra_js %}
 <script>
-  const s = document.getElementById('start_time'), e = document.getElementById('end_time');
-  s.addEventListener('change', () => { e.min = s.value; if (e.value && e.value <= s.value) e.value = ''; });
+  (() => {
+    const s = document.getElementById('start_time'), e = document.getElementById('end_time');
+    if (s.value) e.min = s.value;
+    s.addEventListener('change', () => { e.min = s.value; if (e.value && e.value <= s.value) e.value = ''; });
+  })();
 </script>
 {% endblock %}

@@ -43,8 +43,8 @@
           <thead>
             <tr>
               <th scope="col">Resource</th>
-              <th scope="col">Booking A</th>
-              <th scope="col">Booking B</th>
+              <th scope="col">Booking A (existing)</th>
+              <th scope="col">Booking B (new)</th>
               <th scope="col">Detected</th>
               <th scope="col">Status</th>
               <th scope="col"><span class="sr-only">Actions</span></th>
@@ -54,22 +54,28 @@
             {% for c in conflicts %}
             <tr>
               <td data-label="Resource">
-                <a class="row-title" href="{% url 'bookings:conflict_detail' c.pk %}">{{ c.booking_a.resource.name }}</a>
-                <small class="row-sub">{{ c.booking_a.start_time|date:"D, d M Y" }}</small>
+                <a class="row-title" href="{% url 'bookings:conflict_detail' c.pk %}">{{ c.conflicting_booking.resource.name }}</a>
+                <small class="row-sub">{{ c.conflicting_booking.start_time|date:"D, d M Y" }}</small>
               </td>
               <td data-label="Booking A">
-                <span class="conflict-who">{{ c.booking_a.user.get_full_name|default:c.booking_a.user.username }}</span>
-                <small class="row-sub">{{ c.booking_a.start_time|time:"H:i" }} – {{ c.booking_a.end_time|time:"H:i" }}</small>
+                <span class="conflict-who">{{ c.conflicting_booking.user.get_full_name|default:c.conflicting_booking.user.username }}</span>
+                <small class="row-sub">{{ c.conflicting_booking.start_time|time:"H:i" }} – {{ c.conflicting_booking.end_time|time:"H:i" }}</small>
               </td>
               <td data-label="Booking B">
-                <span class="conflict-who">{{ c.booking_b.user.get_full_name|default:c.booking_b.user.username }}</span>
-                <small class="row-sub">{{ c.booking_b.start_time|time:"H:i" }} – {{ c.booking_b.end_time|time:"H:i" }}</small>
+                <span class="conflict-who">{{ c.booking.user.get_full_name|default:c.booking.user.username }}</span>
+                <small class="row-sub">{{ c.booking.start_time|time:"H:i" }} – {{ c.booking.end_time|time:"H:i" }}</small>
               </td>
               <td data-label="Detected">{{ c.detected_at|date:"d M Y, H:i" }}</td>
-              <td data-label="Status"><span class="badge badge-{{ c.status|lower|slugify }}">{{ c.status }}</span></td>
+              <td data-label="Status">
+                {% if c.resolution %}
+                <span class="badge badge-resolved">Resolved</span>
+                {% else %}
+                <span class="badge badge-open">Open</span>
+                {% endif %}
+              </td>
               <td class="row-actions">
                 <a class="btn btn-outline btn-sm" href="{% url 'bookings:conflict_detail' c.pk %}">
-                  {% if c.status == 'Resolved' %}View{% else %}Review{% endif %}
+                  {% if c.resolution %}View{% else %}Review{% endif %}
                 </a>
               </td>
             </tr>

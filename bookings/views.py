@@ -1,5 +1,6 @@
 import calendar
 from datetime import date, timedelta
+from urllib.parse import urlencode
 from zoneinfo import ZoneInfo
 
 from django.contrib import messages
@@ -7,6 +8,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.core.mail import send_mail
 from django.db.models import Q
 from django.shortcuts import render, get_object_or_404, redirect
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from django.views.decorators.http import require_POST
@@ -17,8 +19,17 @@ from .models import Booking, ConflictLog, WaitList
 DHAKA_TZ = ZoneInfo('Asia/Dhaka')
 
 
+def is_staff_or_admin(user):
+    """Staff, superusers and users whose role is 'admin' (like resources/views.py)."""
+    return (
+        user.is_staff
+        or user.is_superuser
+        or getattr(user, 'role', '') == 'admin'
+    )
+
+
 def staff_required(view):
-    return login_required(user_passes_test(lambda u: u.is_staff)(view))
+    return login_required(user_passes_test(is_staff_or_admin)(view))
 
 
 def parse_local_datetime(value):
@@ -38,6 +49,12 @@ def booking_list(request):
     bookings = Booking.objects.filter(
         user=request.user
     ).select_related('resource').order_by('-start_time')
+
+    # Make the status tabs (?status=Pending ...) work
+    status = request.GET.get('status')
+    if status in ('Pending', 'Approved', 'Cancelled'):
+        bookings = bookings.filter(status=status)
+
     return render(request, 'bookings/booking_list.html', {
         'bookings': bookings
     })
@@ -56,8 +73,10 @@ def create_booking(request, resource_id):
     resource = get_object_or_404(Resource, id=resource_id)
 
     if request.method == 'POST':
-        start_time = parse_local_datetime(request.POST.get('start_time'))
-        end_time = parse_local_datetime(request.POST.get('end_time'))
+        raw_start = request.POST.get('start_time')
+        raw_end = request.POST.get('end_time')
+        start_time = parse_local_datetime(raw_start)
+        end_time = parse_local_datetime(raw_end)
         purpose = request.POST.get('purpose', '').strip()
 
         if not start_time or not end_time:
@@ -73,7 +92,18 @@ def create_booking(request, resource_id):
             messages.error(request, 'Please enter the booking purpose.')
 
         elif check_conflict(resource, start_time, end_time).exists():
-            messages.error(request, 'This resource is already booked for that time.')
+            # Slot taken: send the user to the waitlist with the form pre-filled
+            messages.error(
+                request,
+                'This resource is already booked for that time. '
+                'You can join the waitlist below.'
+            )
+            query = urlencode({
+                'resource': resource.id,
+                'start': raw_start,
+                'end': raw_end,
+            })
+            return redirect(f"{reverse('bookings:waitlist')}?{query}")
 
         else:
             Booking.objects.create(
@@ -93,8 +123,7 @@ def create_booking(request, resource_id):
 
 
 @login_required
-
-
+@require_POST
 def cancel_booking(request, id):
     booking = get_object_or_404(
         Booking,
@@ -113,6 +142,7 @@ def cancel_booking(request, id):
 
     messages.success(request, 'Booking cancelled successfully!')
     return redirect('bookings:booking_list')
+
 
 # ---------------------------------------------------------------------------
 # Conflict helpers
@@ -258,7 +288,13 @@ def conflict_list(request):
 
 @staff_required
 def conflict_detail(request, id):
-    conflict = get_object_or_404(ConflictLog, id=id)
+    conflict = get_object_or_404(
+        ConflictLog.objects.select_related(
+            'booking__resource', 'booking__user',
+            'conflicting_booking__user',
+        ),
+        id=id,
+    )
     new_booking = conflict.booking
     alternative = suggest_alternative(
         new_booking.resource,
@@ -326,15 +362,28 @@ def resolve_conflict(request, id):
 
 @login_required
 def waitlist_view(request):
-    entries = WaitList.objects.filter(
-        user=request.user
-    ).select_related('resource').order_by('-id')
+    entries = list(
+        WaitList.objects.filter(user=request.user)
+        .select_related('resource').order_by('-id')
+    )
+
+    # Place in line: how many active entries for an overlapping slot came first
+    for entry in entries:
+        if entry.status in ('waiting', 'notified'):
+            entry.queue_position = WaitList.objects.filter(
+                resource=entry.resource,
+                status__in=['waiting', 'notified'],
+                requested_start__lt=entry.requested_end,
+                requested_end__gt=entry.requested_start,
+                id__lt=entry.id,
+            ).count() + 1
+        else:
+            entry.queue_position = None
 
     return render(request, 'bookings/waitlist.html', {
         'entries': entries,
         'resources': Resource.objects.all(),
     })
-
 
 
 @login_required
@@ -402,3 +451,49 @@ def notify_availability(booking):
             )
         return entry
     return None
+
+
+# ---------------------------------------------------------------------------
+# Approve / reject bookings (staff)
+# ---------------------------------------------------------------------------
+
+def _set_status(request, id, status):
+    booking = get_object_or_404(Booking, id=id, status='Pending')
+
+    # Don't approve a booking that overlaps one that is already approved
+    if status == 'Approved' and check_conflict(
+        booking.resource, booking.start_time, booking.end_time,
+        exclude_id=booking.id,
+    ).filter(status='Approved').exists():
+        messages.error(request, f'Booking #{booking.id} overlaps an approved booking.')
+        return redirect('bookings:pending_bookings')
+
+    booking.status = status
+    booking.save()                       # the signal emails the user
+    if status == 'Rejected':
+        notify_availability(booking)     # free the slot for the waitlist
+
+    messages.success(request, f'Booking #{booking.id} {status.lower()}.')
+    return redirect('bookings:pending_bookings')
+
+
+@staff_required
+def pending_bookings(request):
+    bookings = Booking.objects.filter(status='Pending').select_related(
+        'resource', 'user'
+    ).order_by('created_at')
+    return render(request, 'bookings/pending_bookings.html', {
+        'bookings': bookings
+    })
+
+
+@staff_required
+@require_POST
+def approve_booking(request, id):
+    return _set_status(request, id, 'Approved')
+
+
+@staff_required
+@require_POST
+def reject_booking(request, id):
+    return _set_status(request, id, 'Rejected')

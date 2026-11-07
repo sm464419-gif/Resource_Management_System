@@ -16,4 +16,7 @@ urlpatterns = [
     path('waitlist/', views.waitlist_view, name='waitlist'),
     path('waitlist/add/', views.add_to_waitlist, name='add_to_waitlist'),
     path('waitlist/<int:id>/leave/', views.leave_waitlist, name='leave_waitlist'),
+    path('review/', views.pending_bookings, name='pending_bookings'),
+    path('<int:id>/approve/', views.approve_booking, name='approve_booking'),
+    path('<int:id>/reject/', views.reject_booking, name='reject_booking'),
 ]
