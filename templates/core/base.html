@@ -19,8 +19,8 @@
   <a class="skip-link" href="#main">Skip to content</a>
 
   {# "as" stores an empty string instead of crashing the whole site if a route is missing. #}
-  {# Analytics has no app_name, so its route is the plain name 'analytics_dashboard'. #}
-  {% url 'analytics_dashboard' as analytics_url %}
+  {# Requires app_name = 'analytics' in analytics/urls.py and app_name = 'core' in core/urls.py. #}
+  {% url 'analytics:analytics_dashboard' as analytics_url %}
   {% url 'core:about' as about_url %}
 
   {% with app=request.resolver_match.app_name page=request.resolver_match.url_name %}
@@ -89,7 +89,7 @@
             {% endif %}
 
             {# Wrap Analytics in {% if user.is_staff %} once role-based access is in place #}
-            <li><a class="nav-link{% if request.path|slice:':11' == '/analytics/' %} active{% endif %}" href="{{ analytics_url|default:'/' }}">Analytics</a></li>
+            <li><a class="nav-link{% if app == 'analytics' %} active{% endif %}" href="{{ analytics_url|default:'/' }}">Analytics</a></li>
             <li><a class="nav-link{% if page == 'about' %} active{% endif %}" href="{{ about_url|default:'/' }}">About</a></li>
           </ul>
         </nav>
